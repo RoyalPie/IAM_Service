@@ -3,6 +3,8 @@ package com.example.IAM_Service.controller;
 import com.example.IAM_Service.entity.*;
 import com.example.IAM_Service.jwt.JwtUtils;
 import com.example.IAM_Service.payload.request.LoginRequest;
+import com.example.IAM_Service.payload.request.LogoutRequest;
+import com.example.IAM_Service.payload.request.RefreshTokenRequest;
 import com.example.IAM_Service.payload.request.SignupRequest;
 import com.example.IAM_Service.payload.response.JwtResponse;
 import com.example.IAM_Service.payload.response.MessageResponse;
@@ -52,11 +54,6 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
-            System.out.println("Fetching user: " + loginRequest.getUsername());
-            Optional<User> user = userRepository.findByUsername(loginRequest.getUsername());
-            System.out.println("User found: " + user);
-            System.out.println("===========================");
-
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
             );
@@ -64,6 +61,7 @@ public class AuthController {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
             String jwt = jwtUtils.generateToken(userDetails.getUsername());
+            refreshTokenService.deleteByUser(userDetails.getId());
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
 
             return ResponseEntity.ok(new JwtResponse(jwt, refreshToken.getToken(), userDetails.getUsername()));
@@ -122,5 +120,27 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+    @PostMapping("/refreshtoken")
+    public ResponseEntity<?> refreshtoken(@Valid @RequestBody RefreshTokenRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtUtils.generateToken(user.getUsername());
+                    return ResponseEntity.ok(new MessageResponse("New JWT Token: "+token));
+                })
+                .orElseThrow(() -> new IllegalArgumentException("Refresh token is not in database!"));
+    }
+
+    @PostMapping("/signout")
+    public ResponseEntity<?> logoutUser(@RequestBody LogoutRequest request) {
+//        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String token = request.getToken();
+        String username = jwtUtils.getUserNameFromJWT(token);
+        refreshTokenService.deleteByUser(userRepository.findByUsername(username).get().getId());
+        return ResponseEntity.ok(new MessageResponse("Logout successfully"));
     }
 }
