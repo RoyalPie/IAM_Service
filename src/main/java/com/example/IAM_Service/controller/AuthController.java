@@ -19,6 +19,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -81,7 +82,6 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
         }
 
-        // Create new user's account
         User user = new User(signUpRequest.getUsername(), signUpRequest.getEmail(),
                 encoder.encode(signUpRequest.getPassword()));
 
@@ -129,18 +129,26 @@ public class AuthController {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    String token = jwtUtils.generateToken(user.getUsername());
+                    String token = null;
+                    try {
+                        token = jwtUtils.generateToken(user.getUsername());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                     return ResponseEntity.ok(new MessageResponse("New JWT Token: "+token));
                 })
                 .orElseThrow(() -> new IllegalArgumentException("Refresh token is not in database!"));
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> logoutUser(@RequestBody LogoutRequest request) {
+    public ResponseEntity<?> logoutUser(@RequestBody LogoutRequest request) throws Exception {
 //        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String token = request.getToken();
         String username = jwtUtils.getUserNameFromJWT(token);
-        refreshTokenService.deleteByUser(userRepository.findByUsername(username).get().getId());
+        refreshTokenService.deleteByUser(userRepository.findByUsername(username)
+                .map(User::getId)
+                .orElseThrow(()->new UsernameNotFoundException("User not found: " + username))
+        );
         return ResponseEntity.ok(new MessageResponse("Logout successfully"));
     }
 }

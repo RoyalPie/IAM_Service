@@ -5,35 +5,41 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Date;
 @Component
 @Slf4j
 public class JwtUtils {
-    @Value("${jwt.secret}")
-    private String JWT_SECRET;
-
+    private final RSAKeyUtil rsaKeyUtil;
     @Value("${jwt.expiration}")
     private Long EXPIRY_DATE;
 
-    public String generateToken(String username) {
+    public JwtUtils(RSAKeyUtil rsaKeyUtil) {
+        this.rsaKeyUtil = rsaKeyUtil;
+    }
+
+    public String generateToken(String username) throws Exception {
+        PrivateKey privateKey = rsaKeyUtil.getPrivateKey();
         Date now = new Date();
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(now)
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRY_DATE))
-                .signWith(SignatureAlgorithm.HS512, JWT_SECRET)
+                .signWith(SignatureAlgorithm.RS256, privateKey)
                 .compact();
     }
-    public Claims extractClaims(String token) {
-        return Jwts.parser().setSigningKey(JWT_SECRET).parseClaimsJws(token).getBody();
+    public Claims extractClaims(String token) throws Exception {
+        PublicKey publicKey = rsaKeyUtil.getPublicKey();
+        return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token).getBody();
     }
-    public String getUserNameFromJWT(String token) {
+    public String getUserNameFromJWT(String token) throws Exception {
         return extractClaims(token).getSubject();
     }
-    public boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) throws Exception {
         return extractClaims(token).getExpiration().before(new Date());
     }
-    public boolean validateToken(String token, String username) {
+    public boolean validateToken(String token, String username) throws Exception {
         return (username.equals(getUserNameFromJWT(token)) && !isTokenExpired(token));
     }
 }

@@ -34,5 +34,4 @@ build/
 
 project.properties
 *.properties
-resources/keys
 *.pem
