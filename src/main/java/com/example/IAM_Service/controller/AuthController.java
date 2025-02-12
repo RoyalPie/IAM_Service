@@ -8,6 +8,7 @@ import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.RoleRepository;
 import com.example.IAM_Service.repository.UserRepository;
 import com.example.IAM_Service.service.EmailService;
+import com.example.IAM_Service.service.JwtTokenBlackListService;
 import com.example.IAM_Service.service.RefreshTokenService;
 import com.example.IAM_Service.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,8 +56,10 @@ public class AuthController {
     RefreshTokenService refreshTokenService;
 
     @Autowired
-    private EmailService emailService;
+    private JwtTokenBlackListService blackListService;
 
+    @Autowired
+    private EmailService emailService;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -147,11 +150,13 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> logoutUser(@RequestBody LogoutRequest request, @AuthenticationPrincipal String username) {
+    public ResponseEntity<?> logoutUser(HttpServletRequest request) throws Exception {
+        String username = jwtUtils.extractUsername(jwtUtils.extractTokenFromRequest(request));
         refreshTokenService.deleteByUser(userRepository.findByUsername(username)
                 .map(User::getId)
                 .orElseThrow(()->new UsernameNotFoundException("User not found: " + username))
         );
+        blackListService.addToBlacklist(request);
         return ResponseEntity.ok(new MessageResponse("Logout successfully"));
     }
 

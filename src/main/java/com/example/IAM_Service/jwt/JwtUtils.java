@@ -1,9 +1,11 @@
 package com.example.IAM_Service.jwt;
 
 import io.jsonwebtoken.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -33,13 +35,25 @@ public class JwtUtils {
         PublicKey publicKey = rsaKeyUtil.getPublicKey();
         return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token).getBody();
     }
-    public String getUserNameFromJWT(String token) throws Exception {
+    public String extractUsername(String token) throws Exception {
         return extractClaims(token).getSubject();
+    }
+    public Date extractExpiration(String token) throws Exception {
+        return extractClaims(token).getExpiration();
     }
     public boolean isTokenExpired(String token) throws Exception {
         return extractClaims(token).getExpiration().before(new Date());
     }
     public boolean validateToken(String token, String username) throws Exception {
-        return (username.equals(getUserNameFromJWT(token)) && !isTokenExpired(token));
+        return (username.equals(extractUsername(token)) && !isTokenExpired(token));
+    }
+    public String extractTokenFromRequest(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+
+        return null;
     }
 }

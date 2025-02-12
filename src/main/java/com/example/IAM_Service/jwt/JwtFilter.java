@@ -1,5 +1,6 @@
 package com.example.IAM_Service.jwt;
 
+import com.example.IAM_Service.service.JwtTokenBlackListService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,10 @@ import java.util.Collections;
 public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtils jwtUtils;
+
+    @Autowired
+    private JwtTokenBlackListService blackListService;
+
     Logger logger = LoggerFactory.getLogger(JwtFilter.class);
 
     @Override
@@ -29,8 +34,8 @@ public class JwtFilter extends OncePerRequestFilter {
             String token = authorizationHeader.substring(7);
 
             try {
-                String username = jwtUtils.getUserNameFromJWT(token);
-                if (username != null && jwtUtils.validateToken(token, username)) {
+                String username = jwtUtils.extractUsername(token);
+                if (username != null && jwtUtils.validateToken(token, username) && !blackListService.isBlacklisted(token)) {
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(username, null, Collections.emptyList());
 
@@ -38,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             } catch (Exception e) {
 
-                 logger.error("Invalid token or username", e);
+                logger.error("Invalid token or username", e);
             }
         }
 
