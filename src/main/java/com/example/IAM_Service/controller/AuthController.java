@@ -2,15 +2,15 @@ package com.example.IAM_Service.controller;
 
 import com.example.IAM_Service.entity.*;
 import com.example.IAM_Service.jwt.JwtUtils;
-import com.example.IAM_Service.payload.request.LoginRequest;
-import com.example.IAM_Service.payload.request.LogoutRequest;
-import com.example.IAM_Service.payload.request.RefreshTokenRequest;
-import com.example.IAM_Service.payload.request.SignupRequest;
+import com.example.IAM_Service.payload.request.*;
 import com.example.IAM_Service.payload.response.JwtResponse;
 import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.RoleRepository;
 import com.example.IAM_Service.repository.UserRepository;
+import com.example.IAM_Service.service.EmailService;
 import com.example.IAM_Service.service.RefreshTokenService;
+import com.example.IAM_Service.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,17 +18,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.math.BigInteger;
 import java.util.HashSet;
-
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 
 @RestController
@@ -44,13 +43,20 @@ public class AuthController {
     RoleRepository roleRepository;
 
     @Autowired
-    PasswordEncoder encoder;
+    UserService userService;
+
+    @Autowired
+    BCryptPasswordEncoder encoder;
 
     @Autowired
     JwtUtils jwtUtils;
 
     @Autowired
     RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private EmailService emailService;
+
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -141,14 +147,35 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> logoutUser(@RequestBody LogoutRequest request) throws Exception {
-//        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String token = request.getToken();
-        String username = jwtUtils.getUserNameFromJWT(token);
+    public ResponseEntity<?> logoutUser(@RequestBody LogoutRequest request, @AuthenticationPrincipal String username) {
         refreshTokenService.deleteByUser(userRepository.findByUsername(username)
                 .map(User::getId)
                 .orElseThrow(()->new UsernameNotFoundException("User not found: " + username))
         );
         return ResponseEntity.ok(new MessageResponse("Logout successfully"));
+    }
+
+    @PostMapping("/forgotpassword")
+    public ResponseEntity<?> forgotpassword(@RequestBody EmailDetails details){
+        PasswordResetToken resetToken = userService.createPasswordResetTokenForUser(details.getRecipient());
+        details.setMsgBody("\nPlease click the link below to reset your password\n"+resetToken.getToken());
+        details.setSubject("Change Password Mail");
+        return ResponseEntity.ok(emailService.sendSimpleMail(details));
+    }
+    @PutMapping("/forgotpassword/{token}")
+    public ResponseEntity<?> changePasswordAfterValidateToken(@PathVariable String token, @RequestBody ChangePasswordRequest request){
+
+        return userService.findbyToken(token)
+                .map(userService::verifyExpiration)
+                .map(PasswordResetToken::getUser)
+                .map(user -> {
+                    try {
+                        userService.forgotPassword(user.getEmail(), request.getNewPassword());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    return ResponseEntity.ok(new MessageResponse("Change password success"));
+                })
+                .orElseThrow(() -> new IllegalArgumentException("Reset token is not in database!"));
     }
 }
