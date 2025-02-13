@@ -161,43 +161,32 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotpassword(@RequestBody EmailDetails details){
-        PasswordResetToken resetToken = userService.createPasswordResetTokenForUser(details.getRecipient());
-        details.setMsgBody("\nPlease click the link below to reset your password\n\nhttp://localhost:8080/api/auth/verify-reset-token?token="+resetToken.getToken());
+        String resetToken = null;
+        try {
+            resetToken = jwtUtils.generateResetToken(details.getRecipient());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        details.setMsgBody("\nPlease click the link below to reset your password\n\nhttp://localhost:8080/api/auth/verify-reset-token?"+"email="+details.getRecipient()+"&token="+resetToken);
         details.setSubject("Change Password Mail");
         return ResponseEntity.ok(emailService.sendSimpleMail(details));
     }
-    @GetMapping("/forgot-password")
-    public ResponseEntity<?> changePasswordAfterValidateToken(@RequestParam String token){
 
-//        return userService.findbyToken(token)
-//                .map(userService::verifyExpiration)
-//                .map(PasswordResetToken::getUser)
-//                .map(user -> {
-//                    try {
-//                        userService.forgotPassword(user.getEmail(), request.getNewPassword());
-//                    } catch (Exception e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                    return ResponseEntity.ok(new MessageResponse("Change password success"));
-//                })
-//                .orElseThrow(() -> new IllegalArgumentException("Reset token is not in database!"));
-        if (userService.findbyToken(token).map(userService::verifyExpiration).orElse(false)){
-            return ResponseEntity.ok("Directed to change password page");
-        }
-        else return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You're not authorized to change this account password");
-    }
     @GetMapping("/verify-reset-token")
-    public ResponseEntity<String> verifyResetToken(@RequestParam String token) {
-        Optional<PasswordResetToken> resetTokenOpt = userService.findbyToken(token);
+    public ResponseEntity<String> verifyResetToken(@RequestParam String token, String email) {
 
-        if (resetTokenOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid reset token");
+        if (token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Reset token not found");
         }
 
-        if (userService.verifyExpiration(resetTokenOpt.get())) {
-            return ResponseEntity.ok("Directed to change password page");
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token expired");
+        try {
+            if (jwtUtils.validateToken(token, email) && !jwtUtils.isTokenExpired(token)) {
+                return ResponseEntity.ok("Directed to change password page");
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid reset token");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
