@@ -7,10 +7,7 @@ import com.example.IAM_Service.payload.response.JwtResponse;
 import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.RoleRepository;
 import com.example.IAM_Service.repository.UserRepository;
-import com.example.IAM_Service.service.EmailService;
-import com.example.IAM_Service.service.JwtTokenBlackListService;
-import com.example.IAM_Service.service.RefreshTokenService;
-import com.example.IAM_Service.service.UserService;
+import com.example.IAM_Service.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.SneakyThrows;
@@ -20,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -59,8 +57,11 @@ public class AuthController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private OtpService otpService;
+
     @PostMapping("/sign-in")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateToSendOtp(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
@@ -68,16 +69,35 @@ public class AuthController {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-            String jwt = jwtUtils.generateToken(userDetails.getEmail());
-            refreshTokenService.deleteByUser(userDetails.getEmail());
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getEmail());
+//            String jwt = jwtUtils.generateToken(userDetails.getEmail());
+//            refreshTokenService.deleteByUser(userDetails.getEmail());
+//            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getEmail());
+            String otp = otpService.generateOtp(userDetails.getEmail());
+            emailService.sendOtpEmail(userDetails.getEmail(), otp);
 
-            return ResponseEntity.ok(new JwtResponse(jwt, refreshToken.getToken(), userDetails.getUsername()));
+            return ResponseEntity.ok(new MessageResponse("OTP sent to your email. Please verify to proceed."));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }
     }
+    @PostMapping("/sign-in/verify-otp")
+    public ResponseEntity<?> authenticateUser(@RequestBody OtpRequest otpRequest) {
+        String otp = otpRequest.getOtp();
+        String email = otpRequest.getEmail();
+        try {
+            if (otpService.verifyOtp(email, otp)) {
+                String jwt = jwtUtils.generateToken(email);
+                RefreshToken refreshToken = refreshTokenService.createRefreshToken(email);
 
+                return ResponseEntity.ok(new JwtResponse(jwt, refreshToken.getToken(), email));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP code");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while verifying OTP: " + e.getMessage());
+        }
+    }
 
     @PostMapping("/sign-up")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {

@@ -39,4 +39,26 @@ public class EmailService {
             return "Error while Sending Mail";
         }
     }
+    public String sendOtpEmail(String email, String otp)
+    {
+        EmailDetails details = new EmailDetails();
+        try {
+
+            SimpleMailMessage mailMessage
+                    = new SimpleMailMessage();
+
+            mailMessage.setFrom(sender);
+            mailMessage.setTo(email);
+            mailMessage.setText("Your OTP code is: "+otp+"\nPlease don't share this with anyone");
+            mailMessage.setSubject("OTP SignIn Code");
+
+            // Sending the mail
+            javaMailSender.send(mailMessage);
+            return "Mail Sent Successfully...";
+        }
+
+        catch (Exception e) {
+            return "Error while Sending Mail";
+        }
+    }
 }

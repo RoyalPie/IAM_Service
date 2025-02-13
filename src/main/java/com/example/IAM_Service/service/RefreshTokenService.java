@@ -1,6 +1,7 @@
 package com.example.IAM_Service.service;
 
 import com.example.IAM_Service.entity.RefreshToken;
+import com.example.IAM_Service.entity.User;
 import com.example.IAM_Service.jwt.JwtUtils;
 import com.example.IAM_Service.repository.RefreshTokenRepository;
 import com.example.IAM_Service.repository.UserRepository;
@@ -30,12 +31,13 @@ public class RefreshTokenService {
     }
 
     public RefreshToken createRefreshToken(String email) throws Exception {
-        deleteByUser(email);
-        refreshTokenRepository.flush();
-
+        User user = userRepository.findByEmail(email).orElseThrow(()->new RuntimeException("User not found"));
         RefreshToken refreshToken = new RefreshToken();
+        if(refreshTokenRepository.existsByUser(user)){
+            refreshToken = refreshTokenRepository.findByUser(user);
+        }
 
-        refreshToken.setUser(userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found")));
+        refreshToken.setUser(user);
         refreshToken.setToken(jwtUtils.generateRefreshToken(email));
         refreshToken = refreshTokenRepository.save(refreshToken);
 
