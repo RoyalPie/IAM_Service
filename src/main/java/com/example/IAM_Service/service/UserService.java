@@ -1,26 +1,19 @@
 package com.example.IAM_Service.service;
 
 import com.example.IAM_Service.dto.UserDto;
-import com.example.IAM_Service.entity.PasswordResetToken;
-import com.example.IAM_Service.entity.RefreshToken;
+import com.example.IAM_Service.entity.EmailDetails;
 import com.example.IAM_Service.entity.User;
+import com.example.IAM_Service.jwt.JwtUtils;
 import com.example.IAM_Service.payload.request.ChangePasswordRequest;
-import com.example.IAM_Service.repository.PasswordTokenRepository;
 import com.example.IAM_Service.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class UserService {
@@ -28,21 +21,17 @@ public class UserService {
     private UserRepository userRepository;
 
     @Autowired
-    private PasswordTokenRepository passwordTokenRepository;
-
-    @Autowired
     BCryptPasswordEncoder encoder;
 
-    @Value("${password.ResetExpirationMs}")
-    private Long resetTokenDurationMs;
+    @Autowired
+    private EmailService emailService;
 
-    public Optional<User> findbyUsername(String username) {
-        return userRepository.findByUsername(username);
-    }
-    public Optional<PasswordResetToken> findbyToken(String token) {
-        return passwordTokenRepository.findByToken(token);
-    }
+    @Autowired
+    private JwtUtils jwtUtils;
 
+    public Optional<User> findbyEmail(String username) {
+        return userRepository.findByEmail(username);
+    }
     public String updateUser(Long id, @Valid UserDto user) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User with ID " + id + " not found!"));
@@ -74,6 +63,8 @@ public class UserService {
             existingUser.setDateOfBirth(user.getDateOfBirth());
         }
         userRepository.save(existingUser);
+        EmailDetails email = new EmailDetails(existingUser.getEmail(), "Your Information have been changed!!!\n\nIf this is not your action please contact us.","Successful Changed Information");
+        emailService.sendSimpleMail(email);
         return "Cập nhật user thành công";
     }
 
@@ -89,6 +80,8 @@ public class UserService {
         }
 
         userRepository.save(existingUser);
+        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your password have been changed!!!\n\nIf this is not your action please contact us.","Successful Changed Password");
+        emailService.sendSimpleMail(mail);
         return "Đổi mật khẩu thành công";
     }
     public String forgotPassword(String email, String newpassword) {
@@ -98,36 +91,9 @@ public class UserService {
             existingUser.setPassword(encoder.encode(newpassword));
         }
         userRepository.save(existingUser);
+        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your password have been changed!!!\n\nIf this is not your action please contact us.","Successful Changed Password");
+        emailService.sendSimpleMail(mail);
         return "Đổi mật khẩu thành công";
     }
-    public PasswordResetToken createPasswordResetTokenForUser(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
-        if(passwordTokenRepository.existsByUser(user)){
-            deleteByUser(user.getId());
-        }
 
-        passwordTokenRepository.flush();
-
-        PasswordResetToken resetToken = new PasswordResetToken();
-
-        resetToken.setUser(userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found")));
-        resetToken.setExpiryDate(Instant.now().plusMillis(resetTokenDurationMs));
-        resetToken.setToken(UUID.randomUUID().toString());
-        resetToken = passwordTokenRepository.save(resetToken);
-
-        return resetToken;
-
-    }
-    public PasswordResetToken verifyExpiration(PasswordResetToken token) {
-        if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
-            passwordTokenRepository.delete(token);
-            throw new IllegalStateException("Refresh token was expired. Please make a new signin request");
-        }
-
-        return token;
-    }
-    @Transactional
-    public void deleteByUser(Long userId) {
-        passwordTokenRepository.deleteByUser(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")));
-    }
 }
