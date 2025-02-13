@@ -13,22 +13,20 @@ import com.example.IAM_Service.service.RefreshTokenService;
 import com.example.IAM_Service.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigInteger;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -61,7 +59,7 @@ public class AuthController {
     @Autowired
     private EmailService emailService;
 
-    @PostMapping("/signin")
+    @PostMapping("/sign-in")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -70,9 +68,9 @@ public class AuthController {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-            String jwt = jwtUtils.generateToken(userDetails.getUsername());
-            refreshTokenService.deleteByUser(userDetails.getId());
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+            String jwt = jwtUtils.generateToken(userDetails.getEmail());
+            refreshTokenService.deleteByUser(userDetails.getEmail());
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getEmail());
 
             return ResponseEntity.ok(new JwtResponse(jwt, refreshToken.getToken(), userDetails.getUsername()));
         } catch (Exception e) {
@@ -81,7 +79,7 @@ public class AuthController {
     }
 
 
-    @PostMapping("/signup")
+    @PostMapping("/sign-up")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
@@ -127,10 +125,11 @@ public class AuthController {
         }
 
         userRepository.save(user);
-
+        EmailDetails email = new EmailDetails(user.getEmail(), "Welcome new User"+user.getUsername(),"Successful Registration");
+        emailService.sendSimpleMail(email);
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
-    @PostMapping("/refreshtoken")
+    @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshtoken(@Valid @RequestBody RefreshTokenRequest request) {
         String requestRefreshToken = request.getRefreshToken();
 
@@ -140,7 +139,7 @@ public class AuthController {
                 .map(user -> {
                     String token = null;
                     try {
-                        token = jwtUtils.generateToken(user.getUsername());
+                        token = jwtUtils.generateToken(user.getEmail());
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -149,38 +148,57 @@ public class AuthController {
                 .orElseThrow(() -> new IllegalArgumentException("Refresh token is not in database!"));
     }
 
-    @PostMapping("/signout")
+    @PostMapping("/sign-out")
     public ResponseEntity<?> logoutUser(HttpServletRequest request) throws Exception {
-        String username = jwtUtils.extractUsername(jwtUtils.extractTokenFromRequest(request));
-        refreshTokenService.deleteByUser(userRepository.findByUsername(username)
-                .map(User::getId)
-                .orElseThrow(()->new UsernameNotFoundException("User not found: " + username))
+        String email = jwtUtils.extractEmail(jwtUtils.extractTokenFromRequest(request));
+        refreshTokenService.deleteByUser(userRepository.findByEmail(email)
+                .map(User::getEmail)
+                .orElseThrow(()->new UsernameNotFoundException("User not found: " + email))
         );
         blackListService.addToBlacklist(request);
         return ResponseEntity.ok(new MessageResponse("Logout successfully"));
     }
 
-    @PostMapping("/forgotpassword")
+    @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotpassword(@RequestBody EmailDetails details){
         PasswordResetToken resetToken = userService.createPasswordResetTokenForUser(details.getRecipient());
-        details.setMsgBody("\nPlease click the link below to reset your password\n"+resetToken.getToken());
+        details.setMsgBody("\nPlease click the link below to reset your password\n\nhttp://localhost:8080/api/auth/verify-reset-token?token="+resetToken.getToken());
         details.setSubject("Change Password Mail");
         return ResponseEntity.ok(emailService.sendSimpleMail(details));
     }
-    @PutMapping("/forgotpassword/{token}")
-    public ResponseEntity<?> changePasswordAfterValidateToken(@PathVariable String token, @RequestBody ChangePasswordRequest request){
+    @GetMapping("/forgot-password")
+    public ResponseEntity<?> changePasswordAfterValidateToken(@RequestParam String token){
 
-        return userService.findbyToken(token)
-                .map(userService::verifyExpiration)
-                .map(PasswordResetToken::getUser)
-                .map(user -> {
-                    try {
-                        userService.forgotPassword(user.getEmail(), request.getNewPassword());
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    return ResponseEntity.ok(new MessageResponse("Change password success"));
-                })
-                .orElseThrow(() -> new IllegalArgumentException("Reset token is not in database!"));
+//        return userService.findbyToken(token)
+//                .map(userService::verifyExpiration)
+//                .map(PasswordResetToken::getUser)
+//                .map(user -> {
+//                    try {
+//                        userService.forgotPassword(user.getEmail(), request.getNewPassword());
+//                    } catch (Exception e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                    return ResponseEntity.ok(new MessageResponse("Change password success"));
+//                })
+//                .orElseThrow(() -> new IllegalArgumentException("Reset token is not in database!"));
+        if (userService.findbyToken(token).map(userService::verifyExpiration).orElse(false)){
+            return ResponseEntity.ok("Directed to change password page");
+        }
+        else return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You're not authorized to change this account password");
     }
+    @GetMapping("/verify-reset-token")
+    public ResponseEntity<String> verifyResetToken(@RequestParam String token) {
+        Optional<PasswordResetToken> resetTokenOpt = userService.findbyToken(token);
+
+        if (resetTokenOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid reset token");
+        }
+
+        if (userService.verifyExpiration(resetTokenOpt.get())) {
+            return ResponseEntity.ok("Directed to change password page");
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token expired");
+        }
+    }
+
 }

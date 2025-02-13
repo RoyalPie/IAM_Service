@@ -16,20 +16,16 @@ import java.time.Instant;
 @Getter
 public class PasswordResetToken {
 
-    private static final int EXPIRATION = 60;
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Lob
+    @Column(nullable = false)
     private String token;
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
-
-    @Column(nullable = false)
-    private Instant expiryDate;
 
 }

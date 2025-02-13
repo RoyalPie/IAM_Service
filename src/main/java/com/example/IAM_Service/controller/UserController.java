@@ -24,9 +24,9 @@ public class UserController {
     @Autowired
     UserRepository userRepository;
 
-    @GetMapping("/userinfo")
-    public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String username) {
-        return userService.findbyUsername(username)
+    @GetMapping("/user-info")
+    public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String email) {
+        return userService.findbyEmail(email)
                 .map(user -> {
                     UserDto userDto = UserDto.builder()
                             .username(user.getUsername())
@@ -45,17 +45,17 @@ public class UserController {
     }
 
     @PutMapping("/update")
-    public String update(@AuthenticationPrincipal String username, @RequestBody @Valid UserDto user) {
-        Long userId = userService.findbyUsername(username)
+    public String update(@AuthenticationPrincipal String email, @RequestBody @Valid UserDto user) {
+        Long userId = userService.findbyEmail(email)
                 .map(User::getId)
-                .orElseThrow(()->new UsernameNotFoundException("User not found: " + username));
+                .orElseThrow(()->new UsernameNotFoundException("User not found: " + email));
         return userService.updateUser(userId,user);
     }
-    @PutMapping("/changepassword")
-    public ResponseEntity<?> updatepassword(@RequestBody @Valid ChangePasswordRequest request, @AuthenticationPrincipal String username) {
-        Long userId = userRepository.findByUsername(username)
+    @PutMapping("/change-password")
+    public ResponseEntity<?> updatepassword(@RequestBody @Valid ChangePasswordRequest request, @AuthenticationPrincipal String email) {
+        Long userId = userRepository.findByEmail(email)
                 .map(User::getId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
         return ResponseEntity.ok(new MessageResponse(userService.updatePassword(userId, request)));
     }
 
