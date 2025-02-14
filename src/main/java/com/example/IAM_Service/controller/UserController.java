@@ -5,7 +5,10 @@ import com.example.IAM_Service.entity.User;
 import com.example.IAM_Service.payload.request.ChangePasswordRequest;
 import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.UserRepository;
+import com.example.IAM_Service.service.CloudinaryService;
+import com.example.IAM_Service.service.UserActivityLogService;
 import com.example.IAM_Service.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,15 +17,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user")
 public class UserController {
     private final UserService userService;
+    private final CloudinaryService cloudinaryService;
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    UserActivityLogService userActivityLogService;
 
     @GetMapping("/user-info")
     public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String email) {
@@ -52,11 +62,19 @@ public class UserController {
         return userService.updateUser(userId,user);
     }
     @PutMapping("/change-password")
-    public ResponseEntity<?> updatepassword(@RequestBody @Valid ChangePasswordRequest request, @AuthenticationPrincipal String email) {
-        Long userId = userRepository.findByEmail(email)
-                .map(User::getId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
-        return ResponseEntity.ok(new MessageResponse(userService.updatePassword(userId, request)));
+    public ResponseEntity<?> updatepassword(@RequestBody @Valid ChangePasswordRequest request, @AuthenticationPrincipal String email, HttpServletRequest httpRequest) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        String ip = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        userActivityLogService.logActivity(user, "CHANGE_PASSWORD", ip, userAgent);
+        return ResponseEntity.ok(new MessageResponse(userService.updatePassword(user.getId(), request)));
+    }
+    @PostMapping("/change-profile-image")
+    public ResponseEntity<?> updateProfileImage(@RequestParam("image")MultipartFile file, @AuthenticationPrincipal String email){
+        Map data = this.cloudinaryService.upload(file);
+        String imageUrl = data.get("secure_url").toString();
+        userService.updateProfileImage(email, imageUrl);
+        return new ResponseEntity<>(userRepository.findByEmail(email).map(User::getProfilePicturePath), HttpStatus.OK);
     }
 
 }

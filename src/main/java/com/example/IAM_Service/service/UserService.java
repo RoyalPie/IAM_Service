@@ -31,6 +31,7 @@ public class UserService {
     public Optional<User> findbyEmail(String username) {
         return userRepository.findByEmail(username);
     }
+
     public String updateUser(Long id, @Valid UserDto user) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User with ID " + id + " not found!"));
@@ -82,6 +83,17 @@ public class UserService {
         EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your password have been changed!!!\n\nIf this is not your action please contact us.","Successful Changed Password");
         emailService.sendSimpleMail(mail);
         return "Đổi mật khẩu thành công";
+    }
+    public String updateProfileImage(String email, String imageUrl) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User with Email " + email + " not found!"));
+
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            user.setProfilePicturePath(imageUrl);
+        }
+
+        userRepository.save(user);
+        return "Đổi ảnh đại diện thành công";
     }
     public String forgotPassword(String email, String newpassword) {
         User existingUser = userRepository.findByEmail(email)

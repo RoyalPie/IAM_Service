@@ -6,7 +6,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -30,9 +29,9 @@ public class OtpService {
             return false;
         }
         boolean isValid = Objects.equals(redisTemplate.opsForValue().get(email), enteredOtp);
-//        if (isValid) {
-//            redisTemplate.delete(email);
-//        }
+        if (isValid) {
+            redisTemplate.delete(email);
+        }
         return isValid;
     }
 }

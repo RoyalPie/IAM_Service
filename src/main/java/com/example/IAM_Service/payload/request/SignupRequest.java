@@ -30,8 +30,6 @@ public class SignupRequest {
     @Size(min = 6, max = 40)
     private String password;
 
-    private String profilePicturePath;
-
     @NotBlank
     @Size(max = 15)
     private String phoneNumber;
