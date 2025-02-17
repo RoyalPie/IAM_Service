@@ -6,22 +6,30 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class OtpService {
+    @Autowired
+    EmailService emailService;
+
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
     @Value("${otp.expiration}")
     private Long expiration;
 
-    public String generateOtp(String email) {
-        String otp = String.valueOf(new Random().nextInt(900000) + 100000); // 6-digit OTP
+    public String generateAndSendOtp(String email) {
+        if(redisTemplate.hasKey(email)){
+            return "An OTP already been sent. Please check your email";
+        }
+
+        String otp = String.valueOf(new SecureRandom().nextInt(900000) + 100000); // 6-digit OTP
         redisTemplate.opsForValue().set(email, otp, expiration, TimeUnit.MILLISECONDS);
-        return otp;
+        emailService.sendOtpEmail(email, otp);
+        return "OTP sent to your email. Please verify to proceed.";
     }
     @Transactional
     public boolean verifyOtp(String email, String enteredOtp) {

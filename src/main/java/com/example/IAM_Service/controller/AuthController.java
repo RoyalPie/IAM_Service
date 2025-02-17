@@ -22,10 +22,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -79,10 +77,7 @@ public class AuthController {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-            String otp = otpService.generateOtp(userDetails.getEmail());
-            emailService.sendOtpEmail(userDetails.getEmail(), otp);
-
-            return ResponseEntity.ok(new MessageResponse("OTP sent to your email. Please verify to proceed."));
+            return ResponseEntity.ok(new MessageResponse(otpService.generateAndSendOtp(userDetails.getEmail())));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }

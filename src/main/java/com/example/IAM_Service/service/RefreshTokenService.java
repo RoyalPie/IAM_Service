@@ -48,7 +48,7 @@ public class RefreshTokenService {
         try {
             if (jwtUtils.isTokenExpired(token.getToken())) {
                 refreshTokenRepository.delete(token);
-                throw new IllegalStateException("Refresh token was expired. Please make a new signin request");
+                throw new IllegalStateException("Refresh token was expired. Please make a new sign-in request");
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
