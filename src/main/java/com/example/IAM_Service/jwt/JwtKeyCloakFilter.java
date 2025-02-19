@@ -16,9 +16,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 
-public class JwtFilter extends OncePerRequestFilter {
+@Component
+public class JwtKeyCloakFilter extends OncePerRequestFilter {
     @Autowired
-    private JwtUtils jwtUtils;
+    private KeycloakUtil jwtUtils;
 
     @Autowired
     private JwtTokenBlackListService blackListService;
@@ -31,10 +32,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
-
             try {
-                String email = jwtUtils.extractEmail(token);
-                if (email != null && jwtUtils.validateToken(token, email) && !blackListService.isBlacklisted(token)) {
+                String email = jwtUtils.extractUsernameFromToken(token);
+                if (email != null && !blackListService.isBlacklisted(token)) {
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
 

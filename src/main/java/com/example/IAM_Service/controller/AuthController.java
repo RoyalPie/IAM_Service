@@ -8,6 +8,7 @@ import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.RoleRepository;
 import com.example.IAM_Service.repository.UserRepository;
 import com.example.IAM_Service.service.*;
+import com.example.IAM_Service.service.IService.LoginService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +17,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +28,11 @@ import java.util.Set;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    private final CloudinaryService cloudinaryService;
+
+    private final LoginService loginService;
+
+    @Autowired
+    CloudinaryService cloudinaryService;
 
     @Autowired
     AuthenticationManager authenticationManager;
@@ -69,19 +71,10 @@ public class AuthController {
     private String defaultProfilePicture;
 
     @PostMapping("/sign-in")
-    public ResponseEntity<?> authenticateToSendOtp(@Valid @RequestBody LoginRequest loginRequest) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
-            return ResponseEntity.ok(new MessageResponse(otpService.generateAndSendOtp(userDetails.getEmail())));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
-        }
+    public ResponseEntity<?> signIn(@Valid @RequestBody LoginRequest loginRequest) {
+        return loginService.authenticate(loginRequest);
     }
+
     @PostMapping("/sign-in/verify-otp")
     public ResponseEntity<?> authenticateUser(@RequestBody OtpRequest otpRequest,HttpServletRequest request) {
         String otp = otpRequest.getOtp();
@@ -137,9 +130,6 @@ public class AuthController {
                 }
             });
         }
-//        Map data = this.cloudinaryService.upload(file);
-//        String imageUrl = data.get("secure_url").toString();
-//        userService.updateProfileImage(signUpRequest.getEmail(), imageUrl);
 
         user.setRoles(roles);
         user.setAddress(signUpRequest.getAddress());
@@ -148,9 +138,6 @@ public class AuthController {
         user.setDateOfBirth(signUpRequest.getDateOfBirth());
         user.setPhoneNumber(signUpRequest.getPhoneNumber());
 
-//        if (imageUrl != null && imageUrl.isEmpty()) {
-//            user.setProfilePicturePath(imageUrl);
-//        }else user.setProfilePicturePath(defaultProfilePicture);
         user.setProfilePicturePath(defaultProfilePicture);
         userRepository.save(user);
         EmailDetails email = new EmailDetails(user.getEmail(), "Welcome new User"+user.getUsername(),"Successful Registration");

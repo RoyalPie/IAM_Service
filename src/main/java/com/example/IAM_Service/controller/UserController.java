@@ -2,6 +2,7 @@ package com.example.IAM_Service.controller;
 
 import com.example.IAM_Service.dto.UserDto;
 import com.example.IAM_Service.entity.User;
+import com.example.IAM_Service.jwt.KeycloakUtil;
 import com.example.IAM_Service.payload.request.ChangePasswordRequest;
 import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.UserRepository;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +35,9 @@ public class UserController {
 
     @Autowired
     UserActivityLogService userActivityLogService;
+
+    @Autowired
+    private KeycloakUtil keycloakUtil;
 
     @GetMapping("/user-info")
     public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String email) {
@@ -76,5 +81,11 @@ public class UserController {
         userService.updateProfileImage(email, imageUrl);
         return new ResponseEntity<>(userRepository.findByEmail(email).map(User::getProfilePicturePath), HttpStatus.OK);
     }
-
+    @GetMapping("/token")
+    public Map<String, Object> getToken(@AuthenticationPrincipal OidcUser principal) {
+        return Map.of(
+                "access-token", principal.getIdToken().getTokenValue(),
+                "claims", principal.getClaims()
+        );
+    }
 }
