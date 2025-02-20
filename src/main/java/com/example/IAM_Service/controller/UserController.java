@@ -14,11 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,11 +27,12 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
     private final CloudinaryService cloudinaryService;
-    private final UserRepository userRepository;
-    private final UserActivityLogService userActivityLogService;
 
     @Autowired
-    private OAuth2AuthorizedClientService authorizedClientService;
+    UserRepository userRepository;
+
+    @Autowired
+    UserActivityLogService userActivityLogService;
 
     @GetMapping("/user-info")
     public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String email) {
@@ -78,14 +76,5 @@ public class UserController {
         userService.updateProfileImage(email, imageUrl);
         return new ResponseEntity<>(userRepository.findByEmail(email).map(User::getProfilePicturePath), HttpStatus.OK);
     }
-    @GetMapping("/token")
-    public Map<String, Object> getTokens(Authentication authentication) {
-        OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
-                "keycloak", authentication.getName()
-        );
-        return Map.of(
-                "access-token", client.getAccessToken().getTokenValue(),
-                "refresh-token", client.getRefreshToken().getTokenValue()
-        );
-    }
+
 }

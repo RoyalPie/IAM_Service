@@ -1,4 +1,4 @@
-package com.example.IAM_Service.service.refreshTokenService;
+package com.example.IAM_Service.service;
 
 import com.example.IAM_Service.entity.RefreshToken;
 import com.example.IAM_Service.entity.User;
