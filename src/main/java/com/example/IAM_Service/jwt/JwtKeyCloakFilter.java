@@ -15,16 +15,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
-
 @Component
 public class JwtKeyCloakFilter extends OncePerRequestFilter {
-    @Autowired
-    private KeycloakUtil jwtUtils;
+    private final KeycloakUtil keycloakUtil;
 
-    @Autowired
-    private JwtTokenBlackListService blackListService;
+    private final JwtTokenBlackListService blackListService;
 
     Logger logger = LoggerFactory.getLogger(JwtFilter.class);
+    @Autowired
+    public JwtKeyCloakFilter(KeycloakUtil keycloakUtil,
+                             JwtTokenBlackListService blackListService) {
+        this.keycloakUtil = keycloakUtil;
+        this.blackListService = blackListService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
@@ -33,7 +36,7 @@ public class JwtKeyCloakFilter extends OncePerRequestFilter {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
             try {
-                String email = jwtUtils.extractUsernameFromToken(token);
+                String email = keycloakUtil.extractUsernameFromToken(token);
                 if (email != null && !blackListService.isBlacklisted(token)) {
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
@@ -41,7 +44,6 @@ public class JwtKeyCloakFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (Exception e) {
-
                 logger.error("Invalid token or username", e);
             }
         }

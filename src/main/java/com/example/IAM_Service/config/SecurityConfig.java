@@ -2,8 +2,10 @@ package com.example.IAM_Service.config;
 
 import com.example.IAM_Service.jwt.JwtFilter;
 import com.example.IAM_Service.jwt.JwtKeyCloakFilter;
+import com.example.IAM_Service.jwt.JwtUtils;
 import com.example.IAM_Service.repository.UserRepository;
 import com.example.IAM_Service.service.CustomUserDetailsService;
+import com.example.IAM_Service.service.JwtTokenBlackListService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,12 +31,11 @@ import org.springframework.beans.factory.annotation.Value;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+    private final JwtFilter jwtFilter;
 
     private final UserRepository userRepository;
 
     private final CustomUserDetailsService userDetailsService;
-
-    private final JwtKeyCloakFilter jwtKeyCloakFilter;
 
     @Value("${keycloak.enabled}")
     private boolean keycloakEnabled;
@@ -67,7 +68,7 @@ public class SecurityConfig {
                             .requestMatchers("/error/**").permitAll()
                             .anyRequest().authenticated()
                     )
-                    .addFilterBefore(new JwtFilter(), UsernamePasswordAuthenticationFilter.class)
+                    .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                     .build();
         }
     }

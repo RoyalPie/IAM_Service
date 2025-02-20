@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class KeycloakUtil {
-    @Bean
     public JwtDecoder jwtDecoder() {
         return JwtDecoders.fromIssuerLocation("http://localhost:8080/realms/testing-realm");
     }

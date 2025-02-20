@@ -1,4 +1,4 @@
-package com.example.IAM_Service.service;
+package com.example.IAM_Service.service.loginService;
 
 import com.example.IAM_Service.payload.request.LoginRequest;
 import com.example.IAM_Service.service.IService.LoginService;

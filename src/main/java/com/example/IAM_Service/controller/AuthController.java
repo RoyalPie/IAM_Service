@@ -31,11 +31,17 @@ public class AuthController {
 
     private final LoginService loginService;
 
-    @Autowired
-    CloudinaryService cloudinaryService;
+    private final KeycloakService keycloakService;
 
-    @Autowired
-    AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
+
+    private final JwtTokenBlackListService blackListService;
+
+    private final EmailService emailService;
+
+    private final OtpService otpService;
+
+    private final UserActivityLogService userActivityLogService;
 
     @Autowired
     UserRepository userRepository;
@@ -52,23 +58,12 @@ public class AuthController {
     @Autowired
     JwtUtils jwtUtils;
 
-    @Autowired
-    RefreshTokenService refreshTokenService;
-
-    @Autowired
-    private JwtTokenBlackListService blackListService;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private OtpService otpService;
-
-    @Autowired
-    private UserActivityLogService userActivityLogService;
 
     @Value("${default.profilePicture}")
     private String defaultProfilePicture;
+
+    @Value("${keycloak.enabled}")
+    private Boolean keycloakEnabled;
 
     @PostMapping("/sign-in")
     public ResponseEntity<?> signIn(@Valid @RequestBody LoginRequest loginRequest) {
@@ -76,7 +71,7 @@ public class AuthController {
     }
 
     @PostMapping("/sign-in/verify-otp")
-    public ResponseEntity<?> authenticateUser(@RequestBody OtpRequest otpRequest,HttpServletRequest request) {
+    public ResponseEntity<?> authenticateOtp(@RequestBody OtpRequest otpRequest,HttpServletRequest request) {
         String otp = otpRequest.getOtp();
         String email = otpRequest.getEmail();
         try {
@@ -140,6 +135,18 @@ public class AuthController {
 
         user.setProfilePicturePath(defaultProfilePicture);
         userRepository.save(user);
+
+        if (keycloakEnabled) {
+            try {
+                String keycloakUserId = keycloakService.createUserInKeycloak(
+                        signUpRequest.getUsername(), signUpRequest.getEmail(), signUpRequest.getPassword());
+                user.setKeycloakUserId(keycloakUserId); // Lưu Keycloak ID vào database
+                userRepository.save(user); // Cập nhật thông tin Keycloak ID
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: Failed to create user in Keycloak!"));
+            }
+        }
+
         EmailDetails email = new EmailDetails(user.getEmail(), "Welcome new User"+user.getUsername(),"Successful Registration");
         emailService.sendSimpleMail(email);
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
