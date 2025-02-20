@@ -1,17 +1,14 @@
 package com.example.IAM_Service.config;
 
 import com.example.IAM_Service.jwt.JwtFilter;
-import com.example.IAM_Service.jwt.JwtKeyCloakFilter;
-import com.example.IAM_Service.jwt.JwtUtils;
+import com.example.IAM_Service.keycloak.KeycloakJwtConverter;
 import com.example.IAM_Service.repository.UserRepository;
 import com.example.IAM_Service.service.CustomUserDetailsService;
-import com.example.IAM_Service.service.JwtTokenBlackListService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -33,6 +30,8 @@ import org.springframework.beans.factory.annotation.Value;
 public class SecurityConfig {
     private final JwtFilter jwtFilter;
 
+    private final KeycloakJwtConverter keycloakJwtConverter;
+
     private final UserRepository userRepository;
 
     private final CustomUserDetailsService userDetailsService;
@@ -42,35 +41,28 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        if (keycloakEnabled) {
-            return http
-                    .csrf(AbstractHttpConfigurer::disable)
-                    .authorizeHttpRequests(authorize -> authorize
-                            .requestMatchers("/api/auth/**").permitAll()
-                            .requestMatchers("/api/test/**").permitAll()
-                            .requestMatchers("/error/**").permitAll()
-                            .anyRequest().authenticated()
-                    )
-                    .oauth2ResourceServer(oauth2 -> oauth2
-                            .jwt(Customizer.withDefaults())
+
+            http
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/test/**").permitAll()
+                        .requestMatchers("/error/**").permitAll()
+                        .anyRequest().authenticated()
+                );
+
+                if (keycloakEnabled) {
+                    http.oauth2ResourceServer(oauth2 -> oauth2
+                            .jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(keycloakJwtConverter))// Ensure only Keycloak processes JWT
                     )
                     .oauth2Login(login->login
                             .loginPage("/oauth2/authorization/keycloak")
                             .defaultSuccessUrl("/user/token")
-                    )
-                    .build();
-        } else {
-            return http
-                    .csrf(AbstractHttpConfigurer::disable)
-                    .authorizeHttpRequests(authorize -> authorize
-                            .requestMatchers("/api/auth/**").permitAll()
-                            .requestMatchers("/api/test/**").permitAll()
-                            .requestMatchers("/error/**").permitAll()
-                            .anyRequest().authenticated()
-                    )
-                    .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                    .build();
-        }
+                    );
+                } else {
+                    http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                }
+            return http.build();
     }
 
     @Bean

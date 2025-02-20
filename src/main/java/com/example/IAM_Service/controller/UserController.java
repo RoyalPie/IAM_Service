@@ -2,7 +2,6 @@ package com.example.IAM_Service.controller;
 
 import com.example.IAM_Service.dto.UserDto;
 import com.example.IAM_Service.entity.User;
-import com.example.IAM_Service.jwt.KeycloakUtil;
 import com.example.IAM_Service.payload.request.ChangePasswordRequest;
 import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.UserRepository;
@@ -35,9 +34,6 @@ public class UserController {
 
     @Autowired
     UserActivityLogService userActivityLogService;
-
-    @Autowired
-    private KeycloakUtil keycloakUtil;
 
     @GetMapping("/user-info")
     public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String email) {
