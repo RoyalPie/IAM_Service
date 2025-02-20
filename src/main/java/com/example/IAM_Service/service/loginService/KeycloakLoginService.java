@@ -10,7 +10,6 @@ public class KeycloakLoginService implements LoginService {
 
     @Override
     public ResponseEntity<?> authenticate(LoginRequest loginRequest) {
-
         return ResponseEntity.ok("Please log in via Keycloak: http://localhost:8082/login/oauth2/code/keycloak");
     }
 }
