@@ -9,6 +9,7 @@ import com.example.IAM_Service.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,9 @@ public class UserService {
     @Autowired
     private JwtUtils jwtUtils;
 
+    @Autowired
+    private KeycloakService keycloakService;
+
     public Optional<User> findbyEmail(String username) {
         return userRepository.findByEmail(username);
     }
@@ -43,9 +47,6 @@ public class UserService {
         }
         if (user.getRoles() != null && !user.getRoles().isEmpty()) {
             existingUser.setRoles(user.getRoles());
-        }
-        if (user.getEmail() != null && !user.getEmail().isEmpty()) {
-            existingUser.setEmail(user.getEmail());
         }
         if (user.getFirstName() != null && !user.getFirstName().isEmpty()) {
             existingUser.setFirstName(user.getFirstName());
@@ -78,7 +79,7 @@ public class UserService {
         if (request.getNewPassword() != null && !request.getNewPassword().isEmpty()) {
             existingUser.setPassword(encoder.encode(request.getNewPassword()));
         }
-
+        keycloakService.changeUserPassword(existingUser.getKeycloakUserId(), request.getNewPassword());
         userRepository.save(existingUser);
         EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your password have been changed!!!\n\nIf this is not your action please contact us.","Successful Changed Password");
         emailService.sendSimpleMail(mail);
@@ -107,4 +108,28 @@ public class UserService {
         return "Đổi mật khẩu thành công";
     }
 
+    public String softDelete(String email){
+        User existingUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User with Email " + email + " not found!"));
+        existingUser.setDeleted(true);
+        userRepository.save(existingUser);
+
+        keycloakService.changeUserStatus(existingUser.getKeycloakUserId(), false);
+
+        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your account have been deleted!!!\n\nIf this is not your action or you want to report please contact us.","Account Deletion");
+        emailService.sendSimpleMail(mail);
+        return "Successful deleted user";
+    }
+    public String restoreUser(String email){
+        User existingUser = userRepository.findByDeletedEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User with Email " + email + " not found or not deleted!"));
+        existingUser.setDeleted(false);
+        userRepository.save(existingUser);
+
+        keycloakService.changeUserStatus(existingUser.getKeycloakUserId(), true);
+
+        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your account have been deleted!!!\n\nIf this is not your action or you want to report please contact us.","Account Deletion");
+        emailService.sendSimpleMail(mail);
+        return "Successful restored user";
+    }
 }

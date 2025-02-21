@@ -25,6 +25,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -81,7 +82,8 @@ public class AuthController {
         String email = otpRequest.getEmail();
         try {
             if (otpService.verifyOtp(email, otp)) {
-                String jwt = jwtUtils.generateToken(email);
+                Set<Role> roles = userRepository.findByEmail(email).map(User::getRoles).orElseThrow(()->new UsernameNotFoundException("User not found"));
+                String jwt = jwtUtils.generateToken(email, roles);
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(email);
                 String ip = request.getRemoteAddr();
                 String userAgent = request.getHeader("User-Agent");
@@ -141,15 +143,12 @@ public class AuthController {
         user.setProfilePicturePath(defaultProfilePicture);
         userRepository.save(user);
 
-        if (keycloakEnabled) {
-            try {
-                String keycloakUserId = keycloakService.createUserInKeycloak(
-                        signUpRequest.getUsername(), signUpRequest.getEmail(), signUpRequest.getPassword());
-                user.setKeycloakUserId(keycloakUserId);
-                userRepository.save(user);
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body(new MessageResponse("Error: Failed to create user in Keycloak!"));
-            }
+        try {
+            String keycloakUserId = keycloakService.createUserInKeycloak(signUpRequest);
+            user.setKeycloakUserId(keycloakUserId);
+            userRepository.save(user);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Failed to create user in Keycloak!"));
         }
 
         EmailDetails email = new EmailDetails(user.getEmail(), "Welcome new User"+user.getUsername(),"Successful Registration");
@@ -168,7 +167,7 @@ public class AuthController {
                     .map(RefreshToken::getUser)
                     .map(user -> {
                         try {
-                            return jwtUtils.generateToken(user.getEmail());
+                            return jwtUtils.generateToken(user.getEmail(), user.getRoles());
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -197,7 +196,7 @@ public class AuthController {
     }
 
     @GetMapping("/verify-reset-token")
-    public ResponseEntity<String> verifyResetToken(@RequestParam String token) {
+    public ResponseEntity<String> verifyResetToken(@RequestParam String token, @RequestBody ChangePasswordRequest request) {
 
         if (token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Reset token not found");
@@ -206,6 +205,7 @@ public class AuthController {
         try {
             String email = jwtUtils.extractEmail(token);
             if (jwtUtils.validateToken(token, email) && !jwtUtils.isTokenExpired(token)) {
+                userService.updatePassword(userRepository.findByEmail(email).map(User::getId).orElseThrow(()->new UsernameNotFoundException("Not found")), request);
                 return ResponseEntity.ok("Directed to change password page");
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid reset token");

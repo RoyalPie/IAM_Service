@@ -1,5 +1,6 @@
 package com.example.IAM_Service.service;
 
+import com.example.IAM_Service.payload.request.SignupRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
@@ -11,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class KeycloakService {
@@ -36,32 +38,41 @@ public class KeycloakService {
         this.restTemplate = restTemplateBuilder.build();
     }
 
-    public String createUserInKeycloak(String username, String email, String password) {
-        if (!keycloakEnabled) {
-            return null; // Nếu Keycloak bị tắt, bỏ qua việc tạo user
-        }
+    public String createUserInKeycloak(SignupRequest signupRequest) {
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(getAdminAccessToken());
+        Map<String, Object> user = Map.of(
+                "username", signupRequest.getUsername(),
+                "email", signupRequest.getEmail(),
+                "enabled", true,
+                "firstName", signupRequest.getFirstName(),
+                "lastName", signupRequest.getLastName(),
+                "credentials", List.of(Map.of(
+                        "type", "password",
+                        "value", signupRequest.getPassword(),
+                        "temporary", false))
+        );
 
-        Map<String, Object> user = new HashMap<>();
-        user.put("username", username);
-        user.put("email", email);
-        user.put("enabled", true);
-        user.put("credentials", List.of(Map.of("type", "password", "value", password, "temporary", false)));
-
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(user, headers);
-
-        ResponseEntity<Void> response = restTemplate.exchange(
-                keycloakServerUrl + "/admin/realms/" + keycloakRealm + "/users",
-                HttpMethod.POST, request, Void.class);
+        ResponseEntity<Void> response = sendAdminRequest(HttpMethod.POST, "/users", user, Void.class);
 
         if (response.getStatusCode() == HttpStatus.CREATED) {
-            return getUserIdFromKeycloak(username);
+            return getUserIdFromKeycloak(signupRequest.getUsername());
         } else {
             throw new RuntimeException("Failed to create user in Keycloak");
         }
+    }
+
+    public void changeUserStatus(String userId, Boolean status) {
+        sendAdminRequest(HttpMethod.PUT, "/users/" + userId, Map.of("enabled", status), Void.class);
+    }
+
+    public void changeUserPassword(String userId, String newPassword) {
+        sendAdminRequest(HttpMethod.PUT, "/users/" + userId + "/reset-password",
+                Map.of("type", "password", "value", newPassword, "temporary", false), Void.class);
+    }
+
+    private <T> ResponseEntity<T> sendAdminRequest(HttpMethod method, String path, Map<String, Object> body, Class<T> responseType) {
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, getAuthHeaders());
+        return restTemplate.exchange(keycloakServerUrl + "/admin/realms/" + keycloakRealm + path, method, request, responseType);
     }
 
     private String getAdminAccessToken() {
@@ -80,23 +91,30 @@ public class KeycloakService {
                 keycloakServerUrl + "/realms/master/protocol/openid-connect/token",
                 request, Map.class);
 
-        return response.getBody().get("access_token").toString();
+        return Optional.ofNullable(response.getBody())
+                .map(body -> body.get("access_token"))
+                .map(Object::toString)
+                .orElseThrow(() -> new RuntimeException("Failed to obtain access token from Keycloak"));
     }
 
     private String getUserIdFromKeycloak(String username) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(getAdminAccessToken());
-
-        HttpEntity<Void> request = new HttpEntity<>(headers);
+        HttpEntity<Void> request = new HttpEntity<>(getAuthHeaders());
 
         ResponseEntity<List> response = restTemplate.exchange(
                 keycloakServerUrl + "/admin/realms/" + keycloakRealm + "/users?username=" + username,
                 HttpMethod.GET, request, List.class);
 
-        if (!response.getBody().isEmpty()) {
-            Map<String, Object> user = (Map<String, Object>) response.getBody().get(0);
-            return user.get("id").toString();
-        }
-        return null;
+        return Optional.ofNullable(response.getBody())
+                .filter(users -> !users.isEmpty())
+                .map(users -> (Map<String, Object>) users.get(0))
+                .map(user -> user.get("id").toString())
+                .orElseThrow(() -> new RuntimeException("User not found in Keycloak"));
+    }
+
+    private HttpHeaders getAuthHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(getAdminAccessToken());
+        return headers;
     }
 }

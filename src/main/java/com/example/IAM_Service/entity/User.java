@@ -65,6 +65,8 @@ public class User {
     @Temporal(TemporalType.DATE)
     private Date dateOfBirth;
 
+    private boolean deleted = Boolean.FALSE;
+
     public User(String username, String email, String password) {
         this.username = username;
         this.email = email;

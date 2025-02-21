@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -37,7 +38,8 @@ public class UserController {
     private OAuth2AuthorizedClientService authorizedClientService;
 
     @GetMapping("/user-info")
-    public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String email) {
+    public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String email, Authentication authentication) {
+        System.out.println(authentication.getAuthorities());
         return userService.findbyEmail(email)
                 .map(user -> {
                     UserDto userDto = UserDto.builder()
@@ -87,5 +89,15 @@ public class UserController {
                 "access-token", client.getAccessToken().getTokenValue(),
                 "refresh-token", client.getRefreshToken().getTokenValue()
         );
+    }
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/delete")
+    public ResponseEntity<?> softDeleteUser(@RequestParam String email){
+        return ResponseEntity.ok(new MessageResponse(userService.softDelete(email)));
+    }
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/restored")
+    public ResponseEntity<?> restoreDeletedUser(@RequestParam String email){
+        return ResponseEntity.ok(new MessageResponse(userService.restoreUser(email)));
     }
 }
