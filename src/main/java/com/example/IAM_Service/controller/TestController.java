@@ -25,15 +25,19 @@ public class TestController {
     private final CloudinaryService cloudinaryService;
 
     @PostMapping("/cloudinary/upload")
-    public ResponseEntity<Map> uploadImage(@RequestParam("image")MultipartFile file){
+    public ResponseEntity<Map> uploadImage(@RequestParam("image") MultipartFile file) {
         Map data = this.cloudinaryService.upload(file);
         String imageUrl = data.get("secure_url").toString();
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
 
     @PostMapping("/sendMail")
-    public String sendMail(@RequestBody EmailDetails details)
-    {
+    public String sendMail(@RequestBody EmailDetails details) {
         return emailService.sendSimpleMail(details);
+    }
+
+    @GetMapping("/exception")
+    public String throwException() {
+        throw new RuntimeException("This is a test exception!");
     }
 }
