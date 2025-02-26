@@ -1,6 +1,5 @@
 package com.example.IAM_Service.jwt;
 
-import com.example.IAM_Service.entity.ERole;
 import com.example.IAM_Service.entity.Role;
 import io.jsonwebtoken.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +13,7 @@ import java.security.PublicKey;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -34,8 +34,10 @@ public class JwtUtils {
 
     public String generateToken(String email, Set<Role> roles) throws Exception {
         PrivateKey privateKey = rsaKeyUtil.getPrivateKey();
+        Set<String> roleNames = roles.stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
         Date now = new Date();
-        List<String> roleNames = roles.stream().map(role -> role.getName().name()).toList();
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(now)

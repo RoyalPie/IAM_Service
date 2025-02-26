@@ -1,5 +1,6 @@
 package com.example.IAM_Service.controller;
 
+import com.example.IAM_Service.dto.RoleDto;
 import com.example.IAM_Service.dto.UserDto;
 import com.example.IAM_Service.entity.User;
 import com.example.IAM_Service.payload.request.ChangePasswordRequest;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,13 +41,16 @@ public class UserController {
 
     @GetMapping("/user-info")
     public ResponseEntity<UserDto> userinfo(@AuthenticationPrincipal String email, Authentication authentication) {
-        System.out.println(authentication.getAuthorities());
         return userService.findbyEmail(email)
                 .map(user -> {
                     UserDto userDto = UserDto.builder()
                             .username(user.getUsername())
                             .email(user.getEmail())
-                            .roles(user.getRoles())
+                            .roles(user.getRoles()
+                                    .stream()
+                                    .map(role -> new RoleDto(role.getName()))
+                                            .collect(Collectors.toSet())
+                                    )
                             .profilePicturePath(user.getProfilePicturePath())
                             .phoneNumber(user.getPhoneNumber())
                             .address(user.getAddress())
@@ -90,14 +95,5 @@ public class UserController {
                 "refresh-token", client.getRefreshToken().getTokenValue()
         );
     }
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/delete")
-    public ResponseEntity<?> softDeleteUser(@RequestParam String email){
-        return ResponseEntity.ok(new MessageResponse(userService.softDelete(email)));
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/restored")
-    public ResponseEntity<?> restoreDeletedUser(@RequestParam String email){
-        return ResponseEntity.ok(new MessageResponse(userService.restoreUser(email)));
-    }
+
 }

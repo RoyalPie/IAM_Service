@@ -16,9 +16,7 @@ public class EmailService {
     public String sendSimpleMail(EmailDetails details)
     {
         try {
-
-            SimpleMailMessage mailMessage
-                    = new SimpleMailMessage();
+            SimpleMailMessage mailMessage = new SimpleMailMessage();
 
             mailMessage.setFrom(sender);
             mailMessage.setTo(details.getRecipient());
@@ -36,9 +34,7 @@ public class EmailService {
     {
         EmailDetails details = new EmailDetails();
         try {
-
-            SimpleMailMessage mailMessage
-                    = new SimpleMailMessage();
+            SimpleMailMessage mailMessage = new SimpleMailMessage();
 
             mailMessage.setFrom(sender);
             mailMessage.setTo(email);

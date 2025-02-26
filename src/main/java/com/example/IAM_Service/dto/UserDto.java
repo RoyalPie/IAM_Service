@@ -20,11 +20,12 @@ public class UserDto {
     private String username;
     @Email
     private String email;
-    private Set<Role> roles = new HashSet<>();
     private String profilePicturePath;
     private String phoneNumber;
     private String address;
     private String firstName;
     private String lastName;
     private Date dateOfBirth;
+    private Boolean isActive;
+    private Set<RoleDto> roles = new HashSet<>();
 }

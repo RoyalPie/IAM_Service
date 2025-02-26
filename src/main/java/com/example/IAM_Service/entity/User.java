@@ -45,7 +45,6 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
-
     private String profilePicturePath;
 
     @NotBlank
@@ -65,7 +64,10 @@ public class User {
     @Temporal(TemporalType.DATE)
     private Date dateOfBirth;
 
-    private boolean deleted = Boolean.FALSE;
+    private boolean deleted = false;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
 
     public User(String username, String email, String password) {
         this.username = username;
