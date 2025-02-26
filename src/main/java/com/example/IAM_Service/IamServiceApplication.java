@@ -10,7 +10,7 @@ public class IamServiceApplication {
 	public static void main(String[] args) {
 
 		SpringApplication.run(IamServiceApplication.class, args);
-
+		//This is testing
 	}
 
 }
