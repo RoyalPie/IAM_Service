@@ -114,7 +114,7 @@ public class AuthController {
 
         Set<Role> roles = new HashSet<>();
 
-        Role defaultRole = roleRepository.findByName("USER")
+        Role defaultRole = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("Error: Default role 'USER' is not found."));
         roles.add(defaultRole);
 

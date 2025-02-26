@@ -1,4 +1,5 @@
 <configuration>
+    <!-- Console Appender with Highlighted Log Levels -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>
@@ -7,7 +8,25 @@
         </encoder>
     </appender>
 
+    <!-- Rolling File Appender -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/application-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Log Levels -->
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="com.example.IAM_Service" level="DEBUG"/>
+
+    <!-- Root Logger: Logs to both Console & File -->
     <root level="INFO">
-        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="CONSOLE"/> <!-- Logs to console -->
+        <appender-ref ref="FILE"/> <!-- Logs to file -->
     </root>
 </configuration>
