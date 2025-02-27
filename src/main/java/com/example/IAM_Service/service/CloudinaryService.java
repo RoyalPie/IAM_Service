@@ -14,11 +14,11 @@ public class CloudinaryService {
 
     private final Cloudinary cloudinary;
 
-    public Map upload(MultipartFile file)  {
-        try{
+    public Map upload(MultipartFile file) {
+        try {
             Map data = this.cloudinary.uploader().upload(file.getBytes(), Map.of());
             return data;
-        }catch (IOException io){
+        } catch (IOException io) {
             throw new RuntimeException("Image upload fail");
         }
     }

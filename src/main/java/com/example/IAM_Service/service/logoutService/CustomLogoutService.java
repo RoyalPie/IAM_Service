@@ -26,7 +26,7 @@ public class CustomLogoutService implements LogoutService {
     @Override
     public ResponseEntity<?> logout(HttpServletRequest request) throws Exception {
         String email = jwtUtils.extractEmail(jwtUtils.extractTokenFromRequest(request));
-        User user = userRepository.findByEmail(email).orElseThrow(()->new UsernameNotFoundException("User not found: " + email));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
         refreshTokenService.deleteByUser(user.getEmail());
         blackListService.addToBlacklist(request);
         String ip = request.getRemoteAddr();

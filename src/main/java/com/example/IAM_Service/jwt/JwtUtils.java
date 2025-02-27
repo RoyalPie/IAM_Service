@@ -46,6 +46,7 @@ public class JwtUtils {
                 .signWith(SignatureAlgorithm.RS256, privateKey)
                 .compact();
     }
+
     public String generateRefreshToken(String email) throws Exception {
         PrivateKey privateKey = rsaKeyUtil.getPrivateKey();
         Date now = new Date();
@@ -56,6 +57,7 @@ public class JwtUtils {
                 .signWith(SignatureAlgorithm.RS256, privateKey)
                 .compact();
     }
+
     public String generateResetToken(String email) throws Exception {
         PrivateKey privateKey = rsaKeyUtil.getPrivateKey();
         Date now = new Date();
@@ -66,27 +68,34 @@ public class JwtUtils {
                 .signWith(SignatureAlgorithm.RS256, privateKey)
                 .compact();
     }
+
     public List<String> extractRoles(String token) throws Exception {
         Claims claims = extractClaims(token);
 
         return claims.get("roles", List.class);
     }
+
     public Claims extractClaims(String token) throws Exception {
         PublicKey publicKey = rsaKeyUtil.getPublicKey();
         return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token).getBody();
     }
+
     public String extractEmail(String token) throws Exception {
         return extractClaims(token).getSubject();
     }
+
     public Date extractExpiration(String token) throws Exception {
         return extractClaims(token).getExpiration();
     }
+
     public boolean isTokenExpired(String token) throws Exception {
         return extractClaims(token).getExpiration().before(new Date());
     }
+
     public boolean validateToken(String token, String email) throws Exception {
         return (email.equals(extractEmail(token)) && !isTokenExpired(token));
     }
+
     public String extractTokenFromRequest(HttpServletRequest request) {
         String authorizationHeader = request.getHeader("Authorization");
 

@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
@@ -46,9 +47,12 @@ public class SystemAdminService {
         roleRepository.findByName(roleName)
                 .ifPresentOrElse(
                         roleRepository::delete,
-                        () -> { throw new EntityNotFoundException("Role not found: " + roleName); }
+                        () -> {
+                            throw new EntityNotFoundException("Role not found: " + roleName);
+                        }
                 );
     }
+
     public void createPermission(String resource, String action) {
         String fullName = resource + "." + action;
 
@@ -79,6 +83,7 @@ public class SystemAdminService {
         role.getPermissions().remove(permission);
         roleRepository.save(role);
     }
+
     public void deletePermission(String permissionName) {
         Permission permission = permissionRepository.findByName(permissionName)
                 .orElseThrow(() -> new RuntimeException("Permission not found"));

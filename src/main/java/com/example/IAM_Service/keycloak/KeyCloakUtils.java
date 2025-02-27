@@ -6,6 +6,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
 import java.util.Map;
+
 public class KeyCloakUtils {
     private final JwtDecoder jwtDecoder;
 

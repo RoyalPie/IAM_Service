@@ -9,11 +9,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/user_manager")
+@RequestMapping("/user-manager")
 public class ManagerController {
     private final ManagerService managerService;
 
-    public ManagerController(ManagerService managerService){
+    public ManagerController(ManagerService managerService) {
         this.managerService = managerService;
     }
 
@@ -30,14 +30,16 @@ public class ManagerController {
 
         return ResponseEntity.ok(users);
     }
+
     @PreAuthorize("hasPermission(null, 'USER.DELETE')")
     @PutMapping("/delete")
-    public ResponseEntity<?> softDeleteUser(@RequestParam String email){
+    public ResponseEntity<?> softDeleteUser(@RequestParam String email) {
         return ResponseEntity.ok(new MessageResponse(managerService.softDelete(email)));
     }
+
     @PreAuthorize("hasPermission(null, 'USER.UPDATE')")
     @PutMapping("/status")
-    public ResponseEntity<?> changeUserStatus(@RequestParam String email, Boolean status){
+    public ResponseEntity<?> changeUserStatus(@RequestParam String email, Boolean status) {
         return ResponseEntity.ok(new MessageResponse(managerService.changeUserStatus(email, status)));
     }
 

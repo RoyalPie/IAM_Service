@@ -8,6 +8,7 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+
 import java.io.Serializable;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,9 +29,11 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
         CustomAuthenticationToken authToken = (CustomAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
 
-        if(authToken.getIsRoot()) return true;
+        if (authToken.getIsRoot()) return true;
 
-        Set<String> userPermissions = authToken.getPermissions().stream().map(p -> p.getResource()+"."+p.getPermission()).collect(Collectors.toSet());
+        Set<String> userPermissions = authToken.getPermissions().stream()
+                .map(p -> p.getResource() + "." + p.getPermission())
+                .collect(Collectors.toSet());
 
         return userPermissions.contains(permission.toString());
     }
@@ -43,7 +46,7 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
         String email = authentication.getName();
 
-        if(roleRepository.isRoot(email)) return true;
+        if (roleRepository.isRoot(email)) return true;
 
         Set<String> userPermissions = permissionRepository.findUserPermissions(email);
         return userPermissions.contains(permission.toString());

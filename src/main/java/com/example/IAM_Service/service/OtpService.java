@@ -22,7 +22,7 @@ public class OtpService {
     private Long expiration;
 
     public String generateAndSendOtp(String email) {
-        if(redisTemplate.hasKey(email)){
+        if (redisTemplate.hasKey(email)) {
             return "An OTP already been sent. Please check your email";
         }
 
@@ -31,6 +31,7 @@ public class OtpService {
         emailService.sendOtpEmail(email, otp);
         return "OTP sent to your email. Please verify to proceed.";
     }
+
     @Transactional
     public boolean verifyOtp(String email, String enteredOtp) {
         if (!redisTemplate.hasKey(email)) {

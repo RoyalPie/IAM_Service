@@ -77,17 +77,17 @@ public class AuthController {
     }
 
     @PostMapping("/sign-in/verify-otp")
-    public ResponseEntity<?> authenticateOtp(@RequestBody OtpRequest otpRequest,HttpServletRequest request) {
+    public ResponseEntity<?> authenticateOtp(@RequestBody OtpRequest otpRequest, HttpServletRequest request) {
         String otp = otpRequest.getOtp();
         String email = otpRequest.getEmail();
         try {
             if (otpService.verifyOtp(email, otp)) {
-                Set<Role> roles = userRepository.findByEmail(email).map(User::getRoles).orElseThrow(()->new UsernameNotFoundException("User not found"));
+                Set<Role> roles = userRepository.findByEmail(email).map(User::getRoles).orElseThrow(() -> new UsernameNotFoundException("User not found"));
                 String jwt = jwtUtils.generateToken(email, roles);
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(email);
                 String ip = request.getRemoteAddr();
                 String userAgent = request.getHeader("User-Agent");
-                userActivityLogService.logActivity(userService.findbyEmail(email).orElseThrow(()-> new UsernameNotFoundException("Not found user with this email")), "LOGIN", ip, userAgent);
+                userActivityLogService.logActivity(userService.findbyEmail(email).orElseThrow(() -> new UsernameNotFoundException("Not found user with this email")), "LOGIN", ip, userAgent);
 
                 return ResponseEntity.ok(new JwtResponse(jwt, refreshToken.getToken(), email));
             } else {
@@ -136,15 +136,16 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Failed to create user in Keycloak!"));
         }
 
-        EmailDetails email = new EmailDetails(user.getEmail(), "Welcome new User"+user.getUsername(),"Successful Registration");
+        EmailDetails email = new EmailDetails(user.getEmail(), "Welcome new User" + user.getUsername(), "Successful Registration");
         emailService.sendSimpleMail(email);
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
+
     @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshtoken(@Valid @RequestBody RefreshTokenRequest request) {
         String requestRefreshToken = request.getRefreshToken();
         String newToken = null;
-        if(keycloakEnabled){
+        if (keycloakEnabled) {
             newToken = keycloakRefreshTokenService.refreshToken(requestRefreshToken);
         } else {
             newToken = refreshTokenService.findByToken(requestRefreshToken)
@@ -159,7 +160,7 @@ public class AuthController {
                     })
                     .orElseThrow(() -> new IllegalArgumentException("Refresh token is not in database!"));
         }
-        return ResponseEntity.ok(new MessageResponse("New JWT Token: "+newToken));
+        return ResponseEntity.ok(new MessageResponse("New JWT Token: " + newToken));
     }
 
     @PostMapping("/sign-out")
@@ -168,14 +169,14 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotpassword(@RequestBody EmailDetails details){
+    public ResponseEntity<?> forgotpassword(@RequestBody EmailDetails details) {
         String resetToken = null;
         try {
             resetToken = jwtUtils.generateResetToken(details.getRecipient());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        details.setMsgBody("\nPlease click the link below to reset your password\n\nhttp://localhost:8080/api/auth/verify-reset-token?"+"email="+details.getRecipient()+"&token="+resetToken);
+        details.setMsgBody("\nPlease click the link below to reset your password\n\nhttp://localhost:8080/api/auth/verify-reset-token?" + "email=" + details.getRecipient() + "&token=" + resetToken);
         details.setSubject("Change Password Mail");
         return ResponseEntity.ok(emailService.sendSimpleMail(details));
     }
@@ -190,7 +191,7 @@ public class AuthController {
         try {
             String email = jwtUtils.extractEmail(token);
             if (jwtUtils.validateToken(token, email) && !jwtUtils.isTokenExpired(token)) {
-                userService.updatePassword(userRepository.findByEmail(email).map(User::getId).orElseThrow(()->new UsernameNotFoundException("Not found")), request);
+                userService.updatePassword(userRepository.findByEmail(email).map(User::getId).orElseThrow(() -> new UsernameNotFoundException("Not found")), request);
                 return ResponseEntity.ok("Directed to change password page");
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid reset token");

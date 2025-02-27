@@ -55,7 +55,7 @@ public class ManagerService {
         );
     }
 
-    public String softDelete(String email){
+    public String softDelete(String email) {
         User existingUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("User with Email " + email + " not found!"));
         existingUser.setDeleted(true);
@@ -63,11 +63,12 @@ public class ManagerService {
 
         keycloakService.changeUserStatus(existingUser.getKeycloakUserId(), false);
 
-        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your account have been deleted!!!\n\nIf this is not your action or you want to report please contact us.","Account Deletion");
+        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your account have been deleted!!!\n\nIf this is not your action or you want to report please contact us.", "Account Deletion");
         emailService.sendSimpleMail(mail);
         return "Successful deleted user";
     }
-    public String changeUserStatus(String email, Boolean status){
+
+    public String changeUserStatus(String email, Boolean status) {
         User existingUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("User with Email " + email + " not found or has been deleted!"));
         existingUser.setActive(status);
@@ -75,10 +76,11 @@ public class ManagerService {
 
         keycloakService.changeUserStatus(existingUser.getKeycloakUserId(), status);
 
-        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your account have been deleted!!!\n\nIf this is not your action or you want to report please contact us.","Account Deletion");
+        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your account have been deleted!!!\n\nIf this is not your action or you want to report please contact us.", "Account Deletion");
         emailService.sendSimpleMail(mail);
         return status ? "Successful unlock user" : "Successful lock user";
     }
+
     public void assignRoleToUser(String email, String roleName) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -93,6 +95,7 @@ public class ManagerService {
         user.getRoles().add(role);
         userRepository.save(user);
     }
+
     public void removeRoleFromUser(String email, String roleName) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));

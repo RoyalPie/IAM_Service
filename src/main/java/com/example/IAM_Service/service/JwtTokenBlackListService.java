@@ -16,6 +16,7 @@ public class JwtTokenBlackListService {
 
     @Autowired
     private JwtUtils jwtUtils;
+
     public void addToBlacklist(HttpServletRequest request) throws Exception {
         String token = jwtUtils.extractTokenFromRequest(request);
         Date expiry = jwtUtils.extractExpiration(token);

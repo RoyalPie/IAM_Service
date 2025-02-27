@@ -29,7 +29,7 @@ public class CustomLoginService implements LoginService {
 
     @Override
     public ResponseEntity<?> authenticate(LoginRequest loginRequest) {
-        if(userRepository.existsByEmail(loginRequest.getUsername()) && userRepository.isActive(loginRequest.getUsername())){
+        if (userRepository.existsByEmail(loginRequest.getUsername()) && userRepository.isActive(loginRequest.getUsername())) {
             try {
 
                 Authentication authentication = authenticationManager.authenticate(
