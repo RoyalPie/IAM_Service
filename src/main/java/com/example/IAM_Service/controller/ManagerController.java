@@ -9,7 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/user_manager")
+@RequestMapping("/user-manager")
 public class ManagerController {
     private final ManagerService managerService;
 
