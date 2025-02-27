@@ -27,6 +27,7 @@ public class RSAKeyUtil {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         return keyFactory.generatePrivate(spec);
     }
+
     public PublicKey getPublicKey() throws Exception {
         String publicKeyPEM = new String(Files.readAllBytes(Paths.get(PUBLIC_KEY_PATH)))
                 .replace("-----BEGIN PUBLIC KEY-----", "")

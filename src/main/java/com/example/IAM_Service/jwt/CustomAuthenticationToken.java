@@ -5,6 +5,7 @@ import com.example.IAM_Service.entity.Role;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+
 import java.util.Collection;
 import java.util.Set;
 

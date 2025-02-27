@@ -12,9 +12,10 @@ public class EmailService {
     @Autowired
     private JavaMailSender javaMailSender;
 
-    @Value("${spring.mail.username}") private String sender;
-    public String sendSimpleMail(EmailDetails details)
-    {
+    @Value("${spring.mail.username}")
+    private String sender;
+
+    public String sendSimpleMail(EmailDetails details) {
         try {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
 
@@ -25,27 +26,24 @@ public class EmailService {
 
             javaMailSender.send(mailMessage);
             return "Mail Sent Successfully...";
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return "Error while Sending Mail";
         }
     }
-    public String sendOtpEmail(String email, String otp)
-    {
+
+    public String sendOtpEmail(String email, String otp) {
         EmailDetails details = new EmailDetails();
         try {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
 
             mailMessage.setFrom(sender);
             mailMessage.setTo(email);
-            mailMessage.setText("Your OTP code is: "+otp+"\nPlease don't share this with anyone");
+            mailMessage.setText("Your OTP code is: " + otp + "\nPlease don't share this with anyone");
             mailMessage.setSubject("OTP SignIn Code");
 
             javaMailSender.send(mailMessage);
             return "Mail Sent Successfully...";
-        }
-
-        catch (Exception e) {
+        } catch (Exception e) {
             return "Error while Sending Mail";
         }
     }

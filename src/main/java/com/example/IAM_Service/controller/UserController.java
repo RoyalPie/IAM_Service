@@ -48,8 +48,8 @@ public class UserController {
                             .roles(user.getRoles()
                                     .stream()
                                     .map(role -> new RoleDto(role.getName()))
-                                            .collect(Collectors.toSet())
-                                    )
+                                    .collect(Collectors.toSet())
+                            )
                             .profilePicturePath(user.getProfilePicturePath())
                             .phoneNumber(user.getPhoneNumber())
                             .address(user.getAddress())
@@ -66,9 +66,10 @@ public class UserController {
     public String update(@AuthenticationPrincipal String email, @RequestBody @Valid UserDto user) {
         Long userId = userService.findbyEmail(email)
                 .map(User::getId)
-                .orElseThrow(()->new UsernameNotFoundException("User not found: " + email));
-        return userService.updateUser(userId,user);
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        return userService.updateUser(userId, user);
     }
+
     @PutMapping("/change-password")
     public ResponseEntity<?> updatepassword(@RequestBody @Valid ChangePasswordRequest request, @AuthenticationPrincipal String email, HttpServletRequest httpRequest) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
@@ -77,13 +78,15 @@ public class UserController {
         userActivityLogService.logActivity(user, "CHANGE_PASSWORD", ip, userAgent);
         return ResponseEntity.ok(new MessageResponse(userService.updatePassword(user.getId(), request)));
     }
+
     @PostMapping("/change-profile-image")
-    public ResponseEntity<?> updateProfileImage(@RequestParam("image")MultipartFile file, @AuthenticationPrincipal String email){
+    public ResponseEntity<?> updateProfileImage(@RequestParam("image") MultipartFile file, @AuthenticationPrincipal String email) {
         Map data = this.cloudinaryService.upload(file);
         String imageUrl = data.get("secure_url").toString();
         userService.updateProfileImage(email, imageUrl);
         return new ResponseEntity<>(userRepository.findByEmail(email).map(User::getProfilePicturePath), HttpStatus.OK);
     }
+
     @GetMapping("/token")
     public Map<String, Object> getTokens(Authentication authentication) {
         OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(

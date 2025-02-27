@@ -43,8 +43,8 @@ public class SystemAdminController {
     @PreAuthorize("hasPermission(null, 'ROLE.CREATE')")
     @PostMapping("/create-role")
     public ResponseEntity<Role> createRole(@RequestBody Role role) {
-        if(role.getName().isEmpty()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        String roleName ="ROLE_"+ role.getName().toUpperCase();
+        if (role.getName().isEmpty()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        String roleName = "ROLE_" + role.getName().toUpperCase();
         role.setName(roleName);
         return ResponseEntity.ok(adminService.createRole(role));
     }

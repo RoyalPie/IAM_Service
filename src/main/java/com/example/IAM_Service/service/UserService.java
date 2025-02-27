@@ -60,7 +60,7 @@ public class UserService {
             existingUser.setDateOfBirth(user.getDateOfBirth());
         }
         userRepository.save(existingUser);
-        EmailDetails email = new EmailDetails(existingUser.getEmail(), "Your Information have been changed!!!\n\nIf this is not your action please contact us.","Successful Changed Information");
+        EmailDetails email = new EmailDetails(existingUser.getEmail(), "Your Information have been changed!!!\n\nIf this is not your action please contact us.", "Successful Changed Information");
         emailService.sendSimpleMail(email);
         return "Cập nhật user thành công";
     }
@@ -77,10 +77,11 @@ public class UserService {
         }
         keycloakService.changeUserPassword(existingUser.getKeycloakUserId(), request.getNewPassword());
         userRepository.save(existingUser);
-        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your password have been changed!!!\n\nIf this is not your action please contact us.","Successful Changed Password");
+        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your password have been changed!!!\n\nIf this is not your action please contact us.", "Successful Changed Password");
         emailService.sendSimpleMail(mail);
         return "Đổi mật khẩu thành công";
     }
+
     public String updateProfileImage(String email, String imageUrl) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("User with Email " + email + " not found!"));
@@ -92,6 +93,7 @@ public class UserService {
         userRepository.save(user);
         return "Đổi ảnh đại diện thành công";
     }
+
     public String forgotPassword(String email, String newpassword) {
         User existingUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("User with Email " + email + " not found!"));
@@ -99,11 +101,10 @@ public class UserService {
             existingUser.setPassword(encoder.encode(newpassword));
         }
         userRepository.save(existingUser);
-        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your password have been changed!!!\n\nIf this is not your action please contact us.","Successful Changed Password");
+        EmailDetails mail = new EmailDetails(existingUser.getEmail(), "Your password have been changed!!!\n\nIf this is not your action please contact us.", "Successful Changed Password");
         emailService.sendSimpleMail(mail);
         return "Đổi mật khẩu thành công";
     }
-
 
 
 }

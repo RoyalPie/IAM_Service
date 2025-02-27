@@ -56,7 +56,7 @@ public class JwtFilter extends OncePerRequestFilter {
             try {
                 String email = jwtUtils.extractEmail(token);
                 if (email != null && jwtUtils.validateToken(token, email) && !blackListService.isBlacklisted(token)) {
-                    User authenticatedUser = userRepository.findByEmailWithRolesAndPermissions(email).orElseThrow(()->new UsernameNotFoundException("Not found User with that email"));
+                    User authenticatedUser = userRepository.findByEmailWithRolesAndPermissions(email).orElseThrow(() -> new UsernameNotFoundException("Not found User with that email"));
                     Set<Role> roles = authenticatedUser.getRoles();
                     Set<Permission> permissions = roles.stream().flatMap(role -> role.getPermissions().stream()).collect(Collectors.toSet());
                     Boolean isRoot = roles.stream().anyMatch(Role::getIsRoot);
@@ -72,6 +72,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         chain.doFilter(request, response);
     }
+
     private boolean isKeycloakToken(String token) {
         try {
             DecodedJWT decodedJWT = JWT.decode(token);

@@ -42,7 +42,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-            http
+        http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**").permitAll()
@@ -53,18 +53,18 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
-                if (keycloakEnabled) {
-                    http.oauth2ResourceServer(oauth2 -> oauth2
+        if (keycloakEnabled) {
+            http.oauth2ResourceServer(oauth2 -> oauth2
                             .jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(keycloakJwtConverter))// Ensure only Keycloak processes JWT
                     )
-                    .oauth2Login(login->login
+                    .oauth2Login(login -> login
                             .loginPage("/oauth2/authorization/keycloak")
                             .defaultSuccessUrl("/user/token")
                     );
-                } else {
-                    http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-                }
-            return http.build();
+        } else {
+            http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        }
+        return http.build();
     }
 
     @Bean
@@ -79,6 +79,7 @@ public class SecurityConfig {
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
+
     @Bean
     public MethodSecurityExpressionHandler methodSecurityExpressionHandler(CustomPermissionEvaluator permissionEvaluator) {
         DefaultMethodSecurityExpressionHandler expressionHandler = new DefaultMethodSecurityExpressionHandler();
