@@ -2,6 +2,10 @@ package com.example.IAM_Service.jwt;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.example.IAM_Service.entity.Permission;
+import com.example.IAM_Service.entity.Role;
+import com.example.IAM_Service.entity.User;
+import com.example.IAM_Service.repository.UserRepository;
 import com.example.IAM_Service.service.JwtTokenBlackListService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,6 +18,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -21,10 +26,14 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+    @Autowired
+    private UserRepository userRepository;
+
     @Autowired
     private JwtUtils jwtUtils;
 
@@ -46,14 +55,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
             try {
                 String email = jwtUtils.extractEmail(token);
-                List<String> roles = jwtUtils.extractRoles(token);
                 if (email != null && jwtUtils.validateToken(token, email) && !blackListService.isBlacklisted(token)) {
-                    List<GrantedAuthority> authorities = roles.stream()
-                            .map(SimpleGrantedAuthority::new)
-                            .collect(Collectors.toList());
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(email, null, authorities);
-
+                    User authenticatedUser = userRepository.findByEmailWithRolesAndPermissions(email).orElseThrow(()->new UsernameNotFoundException("Not found User with that email"));
+                    Set<Role> roles = authenticatedUser.getRoles();
+                    Set<Permission> permissions = roles.stream().flatMap(role -> role.getPermissions().stream()).collect(Collectors.toSet());
+                    Boolean isRoot = roles.stream().anyMatch(Role::getIsRoot);
+                    CustomAuthenticationToken authentication =
+                            new CustomAuthenticationToken(email, null, null, roles, permissions, isRoot);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (Exception e) {

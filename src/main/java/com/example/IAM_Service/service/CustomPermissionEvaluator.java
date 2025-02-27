@@ -1,12 +1,16 @@
 package com.example.IAM_Service.service;
 
+import com.example.IAM_Service.entity.Permission;
+import com.example.IAM_Service.jwt.CustomAuthenticationToken;
 import com.example.IAM_Service.repository.PermissionRepository;
 import com.example.IAM_Service.repository.RoleRepository;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class CustomPermissionEvaluator implements PermissionEvaluator {
@@ -21,14 +25,13 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
     @Override
     public boolean hasPermission(Authentication authentication, Object targetDomainObject, Object permission) {
-        if (authentication == null || targetDomainObject == null || permission == null) {
-            return false;
-        }
-        String email = authentication.getName();
 
-        if(roleRepository.isRoot(email)) return true;
+        CustomAuthenticationToken authToken = (CustomAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
 
-        Set<String> userPermissions = permissionRepository.findUserPermissions(email);
+        if(authToken.getIsRoot()) return true;
+
+        Set<String> userPermissions = authToken.getPermissions().stream().map(p -> p.getResource()+"."+p.getPermission()).collect(Collectors.toSet());
+
         return userPermissions.contains(permission.toString());
     }
 

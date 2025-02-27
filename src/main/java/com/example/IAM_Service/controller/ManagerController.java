@@ -17,7 +17,7 @@ public class ManagerController {
         this.managerService = managerService;
     }
 
-    @PreAuthorize("hasPermission(authentication, 'USER.VIEW')")
+    @PreAuthorize("hasPermission(null, 'USER.VIEW')")
     @GetMapping("/users_list")
     public ResponseEntity<Page<UserDto>> getUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -30,25 +30,25 @@ public class ManagerController {
 
         return ResponseEntity.ok(users);
     }
-    @PreAuthorize("hasPermission(authentication, 'USER.DELETE')")
+    @PreAuthorize("hasPermission(null, 'USER.DELETE')")
     @PutMapping("/delete")
     public ResponseEntity<?> softDeleteUser(@RequestParam String email){
         return ResponseEntity.ok(new MessageResponse(managerService.softDelete(email)));
     }
-    @PreAuthorize("hasPermission(authentication, 'USER.UPDATE')")
+    @PreAuthorize("hasPermission(null, 'USER.UPDATE')")
     @PutMapping("/status")
     public ResponseEntity<?> changeUserStatus(@RequestParam String email, Boolean status){
         return ResponseEntity.ok(new MessageResponse(managerService.changeUserStatus(email, status)));
     }
 
-    @PreAuthorize("hasPermission(authentication, 'USER.UPDATE')")
+    @PreAuthorize("hasPermission(null, 'USER.UPDATE')")
     @PostMapping("/assign-role")
     public ResponseEntity<String> assignRole(@RequestParam String email, @RequestParam String roleName) {
         managerService.assignRoleToUser(email, roleName);
         return ResponseEntity.ok("Role assigned successfully");
     }
 
-    @PreAuthorize("hasPermission(authentication, 'USER.UPDATE')")
+    @PreAuthorize("hasPermission(null, 'USER.UPDATE')")
     @PostMapping("/remove-role")
     public ResponseEntity<String> removeRole(@RequestParam String email, @RequestParam String roleName) {
         managerService.removeRoleFromUser(email, roleName);
