@@ -3,7 +3,6 @@ package com.example.IAM_Service.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,7 +35,6 @@ public class User extends Auditable{
     @Email
     private String email;
 
-    @NotBlank
     @Size(max = 120)
     private String password;
 
@@ -47,7 +45,6 @@ public class User extends Auditable{
     private Set<Role> roles = new HashSet<>();
     private String profilePicturePath;
 
-    @NotBlank
     @Size(max = 15)
     private String phoneNumber;
 
@@ -60,7 +57,6 @@ public class User extends Auditable{
     @NotBlank
     private String lastName;
 
-    @NotNull
     @Temporal(TemporalType.DATE)
     private Date dateOfBirth;
 

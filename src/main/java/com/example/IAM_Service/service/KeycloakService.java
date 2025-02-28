@@ -1,5 +1,6 @@
 package com.example.IAM_Service.service;
 
+import com.example.IAM_Service.entity.User;
 import com.example.IAM_Service.payload.request.SignupRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -56,6 +57,28 @@ public class KeycloakService {
 
         if (response.getStatusCode() == HttpStatus.CREATED) {
             return getUserIdFromKeycloak(signupRequest.getUsername());
+        } else {
+            throw new RuntimeException("Failed to create user in Keycloak");
+        }
+    }
+    public String createUserInKeycloakFromGG(User user) {
+
+        Map<String, Object> keycloakUser = Map.of(
+                "username", user.getUsername(),
+                "email", user.getEmail(),
+                "enabled", true,
+                "firstName", user.getFirstName(),
+                "lastName", user.getLastName(),
+                "credentials", List.of(Map.of(
+                        "type", "password",
+                        "value", user.getPassword(),
+                        "temporary", false))
+        );
+
+        ResponseEntity<Void> response = sendAdminRequest(HttpMethod.POST, "/users", keycloakUser, Void.class);
+
+        if (response.getStatusCode() == HttpStatus.CREATED) {
+            return getUserIdFromKeycloak(user.getUsername());
         } else {
             throw new RuntimeException("Failed to create user in Keycloak");
         }

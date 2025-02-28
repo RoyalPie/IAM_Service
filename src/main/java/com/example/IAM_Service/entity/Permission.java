@@ -18,4 +18,6 @@ public class Permission extends Auditable{
 
     @Column(nullable = false, length = 50)
     private String permission;
+
+    private boolean deleted = false;
 }

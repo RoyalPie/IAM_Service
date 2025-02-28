@@ -17,11 +17,13 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
     @Query("SELECT DISTINCT CONCAT(p.resource, '.', p.permission) FROM User u " +
             "JOIN u.roles r " +
             "JOIN r.permissions p " +
-            "WHERE u.email = :email")
+            "WHERE u.email = :email AND u.deleted = false AND r.deleted = false AND p.deleted = false")
     Set<String> findUserPermissions(@Param("email") String email);
 
-    @Query("SELECT p FROM Permission p WHERE CONCAT(p.resource, '.', p.permission) = :name")
+    @Query("SELECT p FROM Permission p WHERE CONCAT(p.resource, '.', p.permission) = :name AND p.deleted = false")
     Optional<Permission> findByName(@Param("name") String name);
 
+    @Query("SELECT p FROM Permission p WHERE p.deleted = false")
     Page<Permission> findAll(Pageable pageable);
+
 }

@@ -3,6 +3,7 @@ package com.example.IAM_Service.controller;
 import com.example.IAM_Service.dto.UserDto;
 import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.service.ManagerService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,7 @@ public class ManagerController {
         this.managerService = managerService;
     }
 
+    @Operation(summary = "See a list of all users")
     @PreAuthorize("hasPermission(null, 'USER.VIEW')")
     @GetMapping("/users_list")
     public ResponseEntity<Page<UserDto>> getUsers(
@@ -31,18 +33,21 @@ public class ManagerController {
         return ResponseEntity.ok(users);
     }
 
+    @Operation(summary = "Soft Delete an User")
     @PreAuthorize("hasPermission(null, 'USER.DELETE')")
     @PutMapping("/delete")
     public ResponseEntity<?> softDeleteUser(@RequestParam String email) {
         return ResponseEntity.ok(new MessageResponse(managerService.softDelete(email)));
     }
 
+    @Operation(summary = "Lock/Unlock an User")
     @PreAuthorize("hasPermission(null, 'USER.UPDATE')")
     @PutMapping("/status")
     public ResponseEntity<?> changeUserStatus(@RequestParam String email, Boolean status) {
         return ResponseEntity.ok(new MessageResponse(managerService.changeUserStatus(email, status)));
     }
 
+    @Operation(summary = "Assign a role to User")
     @PreAuthorize("hasPermission(null, 'USER.UPDATE')")
     @PostMapping("/assign-role")
     public ResponseEntity<String> assignRole(@RequestParam String email, @RequestParam String roleName) {
@@ -50,6 +55,7 @@ public class ManagerController {
         return ResponseEntity.ok("Role assigned successfully");
     }
 
+    @Operation(summary = "Remove a role from User")
     @PreAuthorize("hasPermission(null, 'USER.UPDATE')")
     @PostMapping("/remove-role")
     public ResponseEntity<String> removeRole(@RequestParam String email, @RequestParam String roleName) {

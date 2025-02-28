@@ -25,7 +25,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -82,8 +81,7 @@ public class AuthController {
         String email = otpRequest.getEmail();
         try {
             if (otpService.verifyOtp(email, otp)) {
-                Set<Role> roles = userRepository.findByEmail(email).map(User::getRoles).orElseThrow(() -> new UsernameNotFoundException("User not found"));
-                String jwt = jwtUtils.generateToken(email, roles);
+                String jwt = jwtUtils.generateToken(email);
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(email);
                 String ip = request.getRemoteAddr();
                 String userAgent = request.getHeader("User-Agent");
@@ -153,7 +151,7 @@ public class AuthController {
                     .map(RefreshToken::getUser)
                     .map(user -> {
                         try {
-                            return jwtUtils.generateToken(user.getEmail(), user.getRoles());
+                            return jwtUtils.generateToken(user.getEmail());
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }

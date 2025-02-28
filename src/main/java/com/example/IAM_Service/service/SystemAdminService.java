@@ -40,18 +40,22 @@ public class SystemAdminService {
     }
 
     public Role createRole(Role role) {
+        if (roleRepository.findByName(role.getName()).isPresent()) {
+            throw new RuntimeException("Role already exists");
+        }
         return roleRepository.save(role);
     }
 
     public void deleteRole(String roleName) {
         roleRepository.findByName(roleName)
-                .ifPresentOrElse(
-                        roleRepository::delete,
-                        () -> {
-                            throw new EntityNotFoundException("Role not found: " + roleName);
-                        }
-                );
+                .ifPresentOrElse(role -> {
+                    role.setDeleted(true);
+                    roleRepository.save(role);
+                }, () -> {
+                    throw new EntityNotFoundException("Role not found: " + roleName);
+                });
     }
+
 
     public void createPermission(String resource, String action) {
         String fullName = resource + "." + action;
@@ -93,7 +97,8 @@ public class SystemAdminService {
         }
         roleRepository.saveAll(roles);
 
-        permissionRepository.delete(permission);
+        permission.setDeleted(true);
+        permissionRepository.save(permission);
     }
 
 }
