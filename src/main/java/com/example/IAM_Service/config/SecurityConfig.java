@@ -5,6 +5,7 @@ import com.example.IAM_Service.keycloak.KeycloakJwtConverter;
 import com.example.IAM_Service.repository.UserRepository;
 import com.example.IAM_Service.service.CustomPermissionEvaluator;
 import com.example.IAM_Service.service.CustomUserDetailsService;
+import com.example.IAM_Service.service.loginService.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,7 +41,7 @@ public class SecurityConfig {
     private boolean keycloakEnabled;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, OAuth2LoginSuccessHandler successHandler) throws Exception {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -62,6 +63,10 @@ public class SecurityConfig {
                             .defaultSuccessUrl("/user/token")
                     );
         } else {
+            http.oauth2Login(oauth2 -> oauth2
+                    .successHandler(successHandler)
+            );
+
             http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         }
         return http.build();

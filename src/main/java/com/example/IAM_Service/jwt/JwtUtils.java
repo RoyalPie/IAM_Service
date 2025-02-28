@@ -32,17 +32,14 @@ public class JwtUtils {
         this.rsaKeyUtil = rsaKeyUtil;
     }
 
-    public String generateToken(String email, Set<Role> roles) throws Exception {
+    public String generateToken(String email) throws Exception {
         PrivateKey privateKey = rsaKeyUtil.getPrivateKey();
-        Set<String> roleNames = roles.stream()
-                .map(Role::getName)
-                .collect(Collectors.toSet());
+
         Date now = new Date();
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(new Date(System.currentTimeMillis() + ACCESS_EXPIRY_DATE))
-                .claim("roles", roleNames)
                 .signWith(SignatureAlgorithm.RS256, privateKey)
                 .compact();
     }
@@ -69,11 +66,6 @@ public class JwtUtils {
                 .compact();
     }
 
-    public List<String> extractRoles(String token) throws Exception {
-        Claims claims = extractClaims(token);
-
-        return claims.get("roles", List.class);
-    }
 
     public Claims extractClaims(String token) throws Exception {
         PublicKey publicKey = rsaKeyUtil.getPublicKey();

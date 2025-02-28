@@ -16,7 +16,7 @@ public class Role extends Auditable{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = 50)
     private String name;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -26,5 +26,7 @@ public class Role extends Auditable{
     private Set<Permission> permissions = new HashSet<>();
 
     private Boolean isRoot = false;
+
+    private boolean deleted = false;
 }
 

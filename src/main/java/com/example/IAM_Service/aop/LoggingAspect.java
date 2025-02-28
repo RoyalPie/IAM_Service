@@ -29,7 +29,7 @@ public class LoggingAspect {
             result = joinPoint.proceed();
             if (result instanceof ResponseEntity) {
                 ResponseEntity<?> response = (ResponseEntity<?>) result;
-                logResponse = String.format("Status: %s, Headers: %s", response.getStatusCode(), response.getHeaders());
+                logResponse = String.format("Status: %s, Headers: %s", response.getStatusCode(), response.getHeaders());//error cung log
             }
             logger.info("Response: {}", logResponse);
         } catch (Exception e) {

@@ -2,13 +2,16 @@ package com.example.IAM_Service.controller;
 
 import com.example.IAM_Service.dto.RoleDto;
 import com.example.IAM_Service.dto.UserDto;
+import com.example.IAM_Service.entity.RefreshToken;
 import com.example.IAM_Service.entity.User;
+import com.example.IAM_Service.jwt.JwtUtils;
 import com.example.IAM_Service.payload.request.ChangePasswordRequest;
 import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.UserRepository;
 import com.example.IAM_Service.service.CloudinaryService;
 import com.example.IAM_Service.service.UserActivityLogService;
 import com.example.IAM_Service.service.UserService;
+import com.example.IAM_Service.service.refreshTokenService.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -34,6 +38,10 @@ public class UserController {
     private final CloudinaryService cloudinaryService;
     private final UserRepository userRepository;
     private final UserActivityLogService userActivityLogService;
+    private final RefreshTokenService refreshTokenService;
+
+    @Autowired
+    JwtUtils jwtUtils;
 
     @Autowired
     private OAuth2AuthorizedClientService authorizedClientService;
@@ -88,14 +96,24 @@ public class UserController {
     }
 
     @GetMapping("/token")
-    public Map<String, Object> getTokens(Authentication authentication) {
-        OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
-                "keycloak", authentication.getName()
-        );
-        return Map.of(
-                "access-token", client.getAccessToken().getTokenValue(),
-                "refresh-token", client.getRefreshToken().getTokenValue()
-        );
-    }
+    public Map<String, Object> getTokens(Authentication authentication, @RequestParam(defaultValue = "") String email) throws Exception {
+        if(email == null){
+            OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
+                    "keycloak", authentication.getName()
+            );
+            return Map.of(
+                    "access-token", client.getAccessToken().getTokenValue(),
+                    "refresh-token", client.getRefreshToken().getTokenValue()
+            );
+        }else {
+            String jwt = jwtUtils.generateToken(email);
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(email);
 
+            return Map.of(
+                    "access-token", jwt,
+                    "refresh-token", refreshToken.getToken(),
+                    "email", email
+            );
+        }
+    }
 }
