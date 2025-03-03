@@ -6,6 +6,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -29,7 +30,8 @@ public class LoggingAspect {
             result = joinPoint.proceed();
             if (result instanceof ResponseEntity) {
                 ResponseEntity<?> response = (ResponseEntity<?>) result;
-                logResponse = String.format("Status: %s, Headers: %s", response.getStatusCode(), response.getHeaders());//error cung log
+                logResponse = String.format("Status: %s, Headers: %s", response.getStatusCode(), response.getHeaders());
+                if(response.getStatusCode().isError()) logResponse = String.format("Status: %s, Headers: %s, Body: %s", response.getStatusCode(), response.getHeaders(), response.getBody());
             }
             logger.info("Response: {}", logResponse);
         } catch (Exception e) {

@@ -39,7 +39,6 @@ public class KeycloakLogoutService implements LogoutService {
 
         String refreshToken = client.getRefreshToken().getTokenValue();
 
-        // Prepare Keycloak logout request
         Map<String, String> requestBody = Map.of(
                 "client_id", clientId,
                 "client_secret", clientSecret,
