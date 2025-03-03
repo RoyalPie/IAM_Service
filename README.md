@@ -16,3 +16,4 @@ Noticeable features
 2. RBAC
 3. Rolling log
 4. Autogen api docs
+5. Google SSO
