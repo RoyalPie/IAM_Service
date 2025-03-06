@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -73,13 +74,21 @@ public class ExcelService {
                     }
                     Date birthDate = null;
                     if (birthDateCell != null) {
-                        if (DateUtil.isCellDateFormatted(birthDateCell)) {
+                        if (birthDateCell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(birthDateCell)) {
                             birthDate = birthDateCell.getDateCellValue();
+                        } else if (birthDateCell.getCellType() == CellType.STRING) {
+                            try {
+                                birthDate = new SimpleDateFormat("dd/MM/yyyy").parse(birthDateCell.getStringCellValue().trim());
+                            } catch (ParseException e) {
+                                errors.add("Row " + (row.getRowNum() + 1) + ": Ngày sinh không hợp lệ. Định dạng phải là dd/MM/yyyy.");
+                                continue;
+                            }
                         } else {
                             errors.add("Row " + (row.getRowNum() + 1) + ": Ngày sinh không hợp lệ. Định dạng phải là dd/MM/yyyy.");
                             continue;
                         }
                     }
+
                     String phoneNumber = "";
                     if (phoneNumberCell != null) {
                         phoneNumber = phoneNumberCell.getStringCellValue().trim();
