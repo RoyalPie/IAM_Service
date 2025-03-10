@@ -33,6 +33,12 @@ public class KeycloakService {
     @Value("${keycloak.enabled}")
     private boolean keycloakEnabled;
 
+    @Value("${keycloak.storage.client-secret}")
+    private String storageSecret;
+
+    @Value("${keycloak.storage.client-id}")
+    private String storageid;
+
     private final RestTemplate restTemplate;
 
     public KeycloakService(RestTemplateBuilder restTemplateBuilder) {
@@ -119,7 +125,26 @@ public class KeycloakService {
                 .map(Object::toString)
                 .orElseThrow(() -> new RuntimeException("Failed to obtain access token from Keycloak"));
     }
+    public String getStorageAccessToken(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "client_credentials");
+        form.add("client_id", storageid);
+        form.add("client_secret", storageSecret);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(form, headers);
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                keycloakServerUrl + "/realms/testing-realm/protocol/openid-connect/token",
+                request, Map.class);
+
+        return Optional.ofNullable(response.getBody())
+                .map(body -> body.get("access_token"))
+                .map(Object::toString)
+                .orElseThrow(() -> new RuntimeException("Failed to obtain access token from Keycloak"));
+    }
     private String getUserIdFromKeycloak(String username) {
         HttpEntity<Void> request = new HttpEntity<>(getAuthHeaders());
 

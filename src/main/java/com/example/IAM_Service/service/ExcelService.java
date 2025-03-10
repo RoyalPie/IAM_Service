@@ -104,7 +104,10 @@ public class ExcelService {
                         errors.add("Row " + (row.getRowNum() + 1) + ": Email không được trống.");
                         continue;
                     }
-                    String address = (streetCell != null ? streetCell.getStringCellValue().trim() : "") + ", " + (wardCell != null ? wardCell.getStringCellValue().trim() : "") + ", " + (districtCell != null ? districtCell.getStringCellValue().trim() : "") + ", " + (provinceCell != null ? provinceCell.getStringCellValue().trim() : "");
+                    String address = (streetCell != null ? streetCell.getStringCellValue().trim() : "")
+                            + ", " + (wardCell != null ? wardCell.getStringCellValue().trim() : "")
+                            + ", " + (districtCell != null ? districtCell.getStringCellValue().trim() : "")
+                            + ", " + (provinceCell != null ? provinceCell.getStringCellValue().trim() : "");
                     Integer experienceYears = 0;
                     if (expCell != null) {
                         if (isNumber(expCell.getNumericCellValue())) {
@@ -115,11 +118,19 @@ public class ExcelService {
                         }
                     }
 
-                    UserDto userDto = UserDto.builder().username(username).firstName(firstName).lastName(lastName).email(email).phoneNumber(phoneNumber).dateOfBirth(birthDate).address(address).YoE(experienceYears).build();
+                    UserDto userDto = UserDto.builder()
+                            .username(username)
+                            .firstName(firstName)
+                            .lastName(lastName)
+                            .email(email)
+                            .phoneNumber(phoneNumber)
+                            .dateOfBirth(birthDate)
+                            .address(address)
+                            .YoE(experienceYears)
+                            .build();
                     userDtos.add(userDto);
 
                 } catch (Exception e) {
-                    System.out.println(e);
                     errors.add("Row " + (row.getRowNum() + 1) + ": Dữ liệu không hợp lệ.");
                 }
             }
@@ -148,12 +159,12 @@ public class ExcelService {
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerFont.setColor(IndexedColors.WHITE.getIndex()); // Chữ trắng
-            headerFont.setFontHeightInPoints((short) 14); // 🔹 Tăng cỡ chữ tiêu đề
+            headerFont.setFontHeightInPoints((short) 14); //Tăng cỡ chữ tiêu đề
             headerStyle.setFont(headerFont);
             headerStyle.setFillForegroundColor(IndexedColors.BLUE.getIndex()); // Nền xanh dương
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             headerStyle.setAlignment(HorizontalAlignment.CENTER);
-            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER); // 🔹 Căn giữa dọc
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             headerStyle.setBorderTop(BorderStyle.MEDIUM);
             headerStyle.setBorderBottom(BorderStyle.MEDIUM);
             headerStyle.setBorderLeft(BorderStyle.THIN);
@@ -173,14 +184,14 @@ public class ExcelService {
             int rowIdx = 1;
             for (UserDto user : users) {
                 Row row = sheet.createRow(rowIdx++);
-                row.setHeightInPoints(20); // 🔹 Tăng chiều cao dòng dữ liệu
+                row.setHeightInPoints(20); // Tăng chiều cao dòng dữ liệu
                 row.createCell(0).setCellValue(rowIdx - 1);
                 row.createCell(1).setCellValue(user.getFirstName() + " " + user.getLastName());
                 row.createCell(2).setCellValue(user.getUsername());
                 row.createCell(3).setCellValue(user.getEmail());
                 row.createCell(4).setCellValue(user.getPhoneNumber());
 
-                // 🔹 Xử lý Date thành String với format dd/MM/yyyy
+                //Xử lý Date thành String với format dd/MM/yyyy
                 String formattedDate = (user.getDateOfBirth() != null) ? dateFormat.format(user.getDateOfBirth()) : "";
                 row.createCell(5).setCellValue(formattedDate);
 
