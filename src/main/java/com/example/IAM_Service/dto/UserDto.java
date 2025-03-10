@@ -27,5 +27,6 @@ public class UserDto {
     private String lastName;
     private Date dateOfBirth;
     private Boolean isActive;
+    private int YoE;
     private Set<RoleDto> roles = new HashSet<>();
 }

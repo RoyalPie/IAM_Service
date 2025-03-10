@@ -60,6 +60,8 @@ public class User extends Auditable{
     @Temporal(TemporalType.DATE)
     private Date dateOfBirth;
 
+    private int YoE;
+
     private boolean deleted = false;
 
     @Column(name = "is_active", nullable = false)
@@ -70,4 +72,5 @@ public class User extends Auditable{
         this.email = email;
         this.password = password;
     }
+
 }

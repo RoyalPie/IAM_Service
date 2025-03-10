@@ -9,6 +9,7 @@ import com.example.IAM_Service.payload.request.ChangePasswordRequest;
 import com.example.IAM_Service.payload.response.MessageResponse;
 import com.example.IAM_Service.repository.UserRepository;
 import com.example.IAM_Service.service.CloudinaryService;
+import com.example.IAM_Service.service.StorageService;
 import com.example.IAM_Service.service.UserActivityLogService;
 import com.example.IAM_Service.service.UserService;
 import com.example.IAM_Service.service.refreshTokenService.RefreshTokenService;
@@ -26,6 +27,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,6 +41,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final UserActivityLogService userActivityLogService;
     private final RefreshTokenService refreshTokenService;
+    private final StorageService storageService;
 
     @Autowired
     JwtUtils jwtUtils;
@@ -88,15 +91,22 @@ public class UserController {
     }
 
     @PostMapping("/change-profile-image")
-    public ResponseEntity<?> updateProfileImage(@RequestParam("image") MultipartFile file, @AuthenticationPrincipal String email) {
-        Map data = this.cloudinaryService.upload(file);
-        String imageUrl = data.get("secure_url").toString();
+    public ResponseEntity<?> updateProfileImage(@RequestParam("image") MultipartFile[] file, @AuthenticationPrincipal String email) throws IOException {
+        Map data = this.storageService.uploadFile(file, email);
+        String imageUrl = data.get("url").toString();
         userService.updateProfileImage(email, imageUrl);
         return new ResponseEntity<>(userRepository.findByEmail(email).map(User::getProfilePicturePath), HttpStatus.OK);
     }
 
+    @PostMapping("/upload-file")
+    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile[] file, @AuthenticationPrincipal String email) throws IOException {
+        Map data = this.storageService.uploadFile(file, email);
+
+        return ResponseEntity.ok("");
+    }
+
     @GetMapping("/token")
-    public Map<String, Object> getTokens(Authentication authentication, @RequestParam(defaultValue = "") String email) throws Exception {
+    public Map<String, Object> getTokens(Authentication authentication, @RequestParam(required = false) String email) throws Exception {
         if(email == null){
             OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
                     "keycloak", authentication.getName()
